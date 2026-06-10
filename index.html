@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagram Viewer</title>
+  <link rel="stylesheet" href="dist/diagram-viewer.css">
+</head>
+<body>
+  <diagram-viewer></diagram-viewer>
+
+  <script type="module" src="dist/diagram-viewer.js"></script>
+  <script type="module">
+    const resp = await fetch("examples/kubernetes/manifest.json");
+    const data = await resp.json();
+    document.querySelector("diagram-viewer").loadData(data);
+  </script>
+</body>
+</html>

@@ -1,0 +1,143 @@
+{
+  "name": "Kubernetes",
+  "title": "Kubernetes Diagram",
+  "version": "1.0",
+  "generated": "2024-12-10",
+  "description": "D2 diagram exploring Kubernetes architecture with layers, scenarios, and step-by-step sequences",
+  "layers": [
+    {
+      "id": "overview",
+      "title": "Overview",
+      "path": "index.svg",
+      "type": "layer",
+      "children": [
+        {
+          "id": "control-plane",
+          "title": "Control Plane",
+          "path": "Control Plane/index.svg",
+          "type": "scenario",
+          "children": [
+            {
+              "id": "etcd",
+              "title": "etcd",
+              "path": "Control Plane/etcd.svg",
+              "type": "layer"
+            },
+            {
+              "id": "kube-controller-manager",
+              "title": "kube-controller-manager",
+              "path": "Control Plane/kube-controller-manager.svg",
+              "type": "layer"
+            },
+            {
+              "id": "cloud-controller-manager",
+              "title": "cloud-controller-manager",
+              "path": "Control Plane/cloud-controller-manager.png",
+              "type": "layer",
+              "overlay": "Control Plane/cloud-controller-manager.overlay.svg"
+            }
+          ]
+        },
+        {
+          "id": "nodes",
+          "title": "Nodes",
+          "path": "Nodes/index.svg",
+          "type": "scenario",
+          "children": [
+            {
+              "id": "pods",
+              "title": "Pods",
+              "path": "Nodes/Pods/index.svg",
+              "type": "scenario",
+              "children": [
+                {
+                  "id": "containers",
+                  "title": "Containers",
+                  "path": "Nodes/Pods/Containers/index.svg",
+                  "type": "scenario",
+                  "children": [
+                    {
+                      "id": "container-lifecycle",
+                      "title": "Container Lifecycle",
+                      "path": "Nodes/Pods/Containers/ContainerLifeCycle.svg",
+                      "type": "layer"
+                    }
+                  ]
+                },
+                {
+                  "id": "pod-lifecycle",
+                  "title": "Pod Lifecycle",
+                  "path": "Nodes/Pods/PodLifecycle/index.svg",
+                  "type": "steps",
+                  "steps": [
+                    {
+                      "step": 1,
+                      "path": "Nodes/Pods/PodLifecycle/1.svg",
+                      "title": "Step 1"
+                    },
+                    {
+                      "step": 2,
+                      "path": "Nodes/Pods/PodLifecycle/2.svg",
+                      "title": "Step 2"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "id": "create-pod",
+          "title": "Create Pod",
+          "path": "Create pod/index.svg",
+          "type": "steps",
+          "steps": [
+            {
+              "step": 1,
+              "path": "Create pod/1.svg",
+              "title": "Step 1"
+            },
+            {
+              "step": 2,
+              "path": "Create pod/2.svg",
+              "title": "Step 2"
+            },
+            {
+              "step": 3,
+              "path": "Create pod/3.svg",
+              "title": "Step 3"
+            },
+            {
+              "step": 4,
+              "path": "Create pod/4.svg",
+              "title": "Step 4"
+            }
+          ]
+        },
+        {
+          "id": "get-nodes",
+          "title": "Get Nodes",
+          "path": "Get nodes/index.svg",
+          "type": "steps",
+          "steps": [
+            {
+              "step": 1,
+              "path": "Get nodes/1.svg",
+              "title": "Step 1"
+            },
+            {
+              "step": 2,
+              "path": "Get nodes/2.svg",
+              "title": "Step 2"
+            },
+            {
+              "step": 3,
+              "path": "Get nodes/3.svg",
+              "title": "Step 3"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="877" height="704" viewBox="0 0 877 704"><a href="../index.svg" aria-label="Go to Overview">
+    <path fill="transparent" stroke="red" stroke-width="2" d="M220 280h80v80h-80z"><title>Kubernetes - Click to view Overview</title></path>
+  </a><a href="etcd.svg" aria-label="Go to etcd">
+    <path fill="transparent" stroke="red" stroke-width="2" d="M100 40h153v102H100z"><title>Node controller - Click to view etcd</title></path>
+  </a><a href="kube-controller-manager.svg" aria-label="Go to kube-controller-manager">
+    <path fill="transparent" stroke="red" stroke-width="2" d="M273 40h153v102H273z"><title>Route controller - Click to view kube-controller-manager</title></path>
+  </a><a href="../Nodes/index.svg" aria-label="Go to Nodes">
+    <path fill="transparent" stroke="red" stroke-width="2" d="M446 40h153v102H446z"><title>Service controller - Click to view Nodes</title></path>
+  </a><a href="index.svg" aria-label="Go to Control Plane">
+    <path fill="transparent" stroke="red" stroke-dasharray="4" stroke-width="2" d="M40 0h619v222H40z" style="pointer-events:none"/>
+  </a></svg>
