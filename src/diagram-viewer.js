@@ -367,14 +367,72 @@ class DiagramViewer extends HTMLElement {
   // ─── Public API ─────────────────────────────────────────────────────────
 
   loadData(data) {
+    // ── v0 shape validation ──────────────────────────────────────────────
+    if (!data || typeof data !== 'object' || !Array.isArray(data.layers)) {
+      throw new Error(
+        'loadData: invalid manifest — expected v0 shape with a "layers" array. ' +
+        'Required: { layers: [{ id, title, path, type }] }'
+      );
+    }
+    for (let i = 0; i < data.layers.length; i++) {
+      const l = data.layers[i];
+      if (!l || typeof l.id !== 'string' || typeof l.title !== 'string' ||
+          typeof l.path !== 'string' || typeof l.type !== 'string') {
+        throw new Error(
+          `loadData: layers[${i}] is invalid — each layer must have string id, title, path, and type.`
+        );
+      }
+    }
+
     this.#sourceData = data;
-    this.#manifest = data;
     this.#basePath = this.getAttribute('base-path') || '';
 
+    // ── Preserve UI state from existing snapshot if present ───────────────
+    let preservedUi = null;
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const snapshot = JSON.parse(raw);
+        if (snapshot.version === 1 && snapshot.ui) {
+          preservedUi = snapshot.ui;
+        }
+      }
+    } catch { /* ignore */ }
+
+    this.#manifest = data;
     this.#navTree.title = data.name ?? 'Diagram';
     this.#buildFlatSlideList();
     this.#navTree.buildTree(data, this.#basePath);
-    this.#loadFromHash();
+
+    if (preservedUi) {
+      // Restore zoom
+      if (typeof preservedUi.zoomPercent === 'number') {
+        this.#zoomLevel = preservedUi.zoomPercent / 100;
+        this.#canvas.zoomLevel = this.#zoomLevel;
+        this.#navTree.zoomPercent = preservedUi.zoomPercent;
+      }
+      // Restore sidebar
+      if (preservedUi.sidebarOpen === false) {
+        this.#container.classList.add('sidebar-collapsed');
+      } else {
+        this.#container.classList.remove('sidebar-collapsed');
+      }
+      if (typeof preservedUi.sidebarWidthPx === 'number' && preservedUi.sidebarOpen !== false) {
+        this.#container.style.gridTemplateColumns = `${preservedUi.sidebarWidthPx}px auto 1fr`;
+      }
+      // Resolve slide — check if saved currentSlideId still exists
+      const hash = location.hash.slice(1);
+      let slideId = hash || preservedUi.currentSlideId;
+      const slideExists = slideId && this.#flatSlides.some(s => s.id === slideId);
+      if (!slideExists) {
+        slideId = this.getAttribute('start-at') || 'overview';
+      }
+      this.#navigateToId(slideId, 'replace');
+    } else {
+      this.#loadFromHash();
+    }
+
+    this.#persist();
   }
 
   reset() {
