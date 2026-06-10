@@ -68,6 +68,7 @@ class DiagramCanvas extends HTMLElement {
   #iframe;
   #iframeContainer;
   #zoomLevel = 1.5;
+  #zoomExplicitlySet = false;
   #initialLoadDone = false;
   #basePath = '';
   #flatSlides = [];
@@ -113,6 +114,7 @@ class DiagramCanvas extends HTMLElement {
   set zoomLevel(val) {
     if (typeof val === 'number' && val >= ZOOM_MIN && val <= ZOOM_MAX) {
       this.#zoomLevel = val;
+      this.#zoomExplicitlySet = true;
       this.#applyZoom();
     }
   }
@@ -359,7 +361,7 @@ class DiagramCanvas extends HTMLElement {
     this.#iframe.dataset.baseHeight = height;
 
     if (!this.#initialLoadDone) {
-      if (!this.hasAttribute('zoom')) {
+      if (!this.hasAttribute('zoom') && !this.#zoomExplicitlySet) {
         this.#zoomLevel = 1.5;
       }
       this.#initialLoadDone = true;
