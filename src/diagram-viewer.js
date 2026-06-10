@@ -47,11 +47,12 @@ const styles = `
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 1rem;
   grid-template-areas:
+    "toolbar        toolbar        toolbar"
     "sidebar-header resize-handle viewer"
     "sidebar-nav    resize-handle viewer"
     "sidebar-footer resize-handle viewer";
   grid-template-columns: var(--sidebar-width) auto 1fr;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   height: 100%;
   line-height: 1.5;
   overflow: hidden;
@@ -156,11 +157,126 @@ diagram-help-modal {
   display: contents;
 }
 
+/* ─── Toolbar ────────────────────────────────────────────────────────── */
+
+.toolbar {
+  align-items: center;
+  background: var(--color-bg);
+  border-block-end: 1px solid var(--color-border);
+  display: flex;
+  gap: 0.375rem;
+  grid-area: toolbar;
+  justify-content: flex-end;
+  padding: 0.25rem 0.5rem;
+}
+
+.toolbar button {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  color: var(--color-text-light);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1;
+  padding: 0.25rem 0.5rem;
+}
+
+.toolbar button:hover {
+  background: var(--color-bg-hover);
+  color: var(--color-text);
+}
+
+/* ─── JSON Dialog ────────────────────────────────────────────────────── */
+
+.json-dialog {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 2rem rgb(0 0 0 / 20%);
+  font-family: inherit;
+  max-height: 80vh;
+  max-width: 40rem;
+  padding: 1rem;
+  width: 90vw;
+}
+
+.json-dialog::backdrop {
+  background: rgb(0 0 0 / 40%);
+}
+
+.json-dialog-header {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin-block-end: 0.5rem;
+}
+
+.json-dialog-header h2 {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.json-dialog textarea {
+  border: 1px solid var(--color-border);
+  border-radius: 0.375rem;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.75rem;
+  height: 50vh;
+  padding: 0.5rem;
+  resize: vertical;
+  width: 100%;
+}
+
+.json-dialog-footer {
+  align-items: center;
+  display: flex;
+  gap: 0.5rem;
+  margin-block-start: 0.5rem;
+}
+
+.json-dialog-footer button {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 500;
+  padding: 0.375rem 0.75rem;
+}
+
+.json-dialog-footer button:hover {
+  background: var(--color-bg-hover);
+}
+
+.json-dialog-footer button.primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: #fff;
+}
+
+.json-dialog-footer button.primary:hover {
+  opacity: 0.9;
+}
+
+.json-dialog-error {
+  color: var(--color-error);
+  font-size: 0.75rem;
+  margin-inline-start: auto;
+}
+
+.json-dialog-copied {
+  color: var(--color-primary);
+  font-size: 0.75rem;
+}
+
 @media (width <= 48rem) {
   .container {
     grid-template-columns: 1fr;
-    grid-template-rows: 1fr;
-    grid-template-areas: "viewer";
+    grid-template-rows: auto 1fr;
+    grid-template-areas: "toolbar" "viewer";
   }
 
   .container diagram-nav-tree,
@@ -369,6 +485,10 @@ class DiagramViewer extends HTMLElement {
   #render() {
     this.shadowRoot.innerHTML = `
       <div class="container">
+        <div class="toolbar">
+          <button class="toolbar-json" title="Import/Export JSON">JSON</button>
+          <button class="toolbar-reset" title="Reset to defaults">Reset</button>
+        </div>
         <button class="sidebar-toggle" title="Show sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -379,6 +499,19 @@ class DiagramViewer extends HTMLElement {
         <diagram-canvas></diagram-canvas>
         <diagram-help-modal></diagram-help-modal>
         <div class="resize-overlay"></div>
+        <dialog class="json-dialog">
+          <div class="json-dialog-header">
+            <h2>Snapshot JSON</h2>
+          </div>
+          <textarea spellcheck="false"></textarea>
+          <div class="json-dialog-footer">
+            <button class="json-copy">Copy</button>
+            <button class="json-apply primary">Apply</button>
+            <button class="json-close">Close</button>
+            <span class="json-dialog-error"></span>
+            <span class="json-dialog-copied"></span>
+          </div>
+        </dialog>
       </div>
     `;
   }
@@ -460,6 +593,125 @@ class DiagramViewer extends HTMLElement {
     this.#keyboardHandler = (e) => this.#handleKeyDown(e);
     this.#container.addEventListener('mouseenter', () => this.#enableKeyboardHandling(), { signal });
     this.#container.addEventListener('mouseleave', () => this.#disableKeyboardHandling(), { signal });
+
+    // Toolbar + dialog
+    this.#initToolbar(signal);
+  }
+
+  #initToolbar(signal) {
+    const $ = (s) => this.shadowRoot.querySelector(s);
+    const dialog = $('.json-dialog');
+    const textarea = dialog.querySelector('textarea');
+    const errorEl = $('.json-dialog-error');
+    const copiedEl = $('.json-dialog-copied');
+
+    // JSON button — open dialog
+    $('.toolbar-json').addEventListener('click', () => {
+      errorEl.textContent = '';
+      copiedEl.textContent = '';
+      textarea.value = JSON.stringify(this.#getSnapshot(), null, 2);
+      dialog.showModal();
+    }, { signal });
+
+    // Reset button
+    $('.toolbar-reset').addEventListener('click', () => {
+      this.reset();
+    }, { signal });
+
+    // Copy
+    $('.json-copy').addEventListener('click', async () => {
+      errorEl.textContent = '';
+      try {
+        await navigator.clipboard.writeText(textarea.value);
+      } catch {
+        // fallback
+        textarea.select();
+        document.execCommand('copy');
+      }
+      copiedEl.textContent = 'Copied';
+      setTimeout(() => { copiedEl.textContent = ''; }, 1500);
+    }, { signal });
+
+    // Apply
+    $('.json-apply').addEventListener('click', () => {
+      errorEl.textContent = '';
+      copiedEl.textContent = '';
+      let parsed;
+      try {
+        parsed = JSON.parse(textarea.value);
+      } catch (e) {
+        errorEl.textContent = `Parse error: ${e.message}`;
+        return;
+      }
+      if (parsed.version !== 1) {
+        errorEl.textContent = 'Invalid snapshot: version must be 1';
+        return;
+      }
+      // Full replace
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch { /* noop */ }
+      this.#applySnapshot(parsed);
+      dialog.close();
+    }, { signal });
+
+    // Close
+    $('.json-close').addEventListener('click', () => {
+      dialog.close();
+    }, { signal });
+  }
+
+  #getSnapshot() {
+    const sidebarOpen = !this.#container.classList.contains('sidebar-collapsed');
+    const currentSlide = this.#flatSlides[this.#currentIndex];
+    let sidebarWidthPx = null;
+    const cols = this.#container.style.gridTemplateColumns;
+    if (cols) {
+      const match = cols.match(/^([\d.]+)px/);
+      if (match) sidebarWidthPx = parseFloat(match[1]);
+    }
+    return {
+      version: 1,
+      manifest: this.#manifest,
+      basePath: this.#basePath,
+      ui: {
+        currentSlideId: currentSlide?.id ?? null,
+        zoomPercent: Math.round(this.#zoomLevel * 100),
+        sidebarOpen,
+        sidebarWidthPx,
+      },
+    };
+  }
+
+  #applySnapshot(snapshot) {
+    this.#sourceData = snapshot.manifest;
+    this.#manifest = snapshot.manifest;
+    this.#basePath = snapshot.basePath ?? '';
+
+    this.#navTree.title = this.#manifest.name ?? 'Diagram';
+    this.#buildFlatSlideList();
+    this.#navTree.buildTree(this.#manifest, this.#basePath);
+
+    const ui = snapshot.ui ?? {};
+
+    if (typeof ui.zoomPercent === 'number') {
+      this.#zoomLevel = ui.zoomPercent / 100;
+      this.#canvas.zoomLevel = this.#zoomLevel;
+      this.#navTree.zoomPercent = ui.zoomPercent;
+    }
+
+    if (ui.sidebarOpen === false) {
+      this.#container.classList.add('sidebar-collapsed');
+    } else {
+      this.#container.classList.remove('sidebar-collapsed');
+    }
+
+    if (typeof ui.sidebarWidthPx === 'number' && ui.sidebarOpen !== false) {
+      this.#container.style.gridTemplateColumns = `${ui.sidebarWidthPx}px auto 1fr`;
+    } else {
+      this.#container.style.gridTemplateColumns = '';
+    }
+
+    const slideId = ui.currentSlideId || 'overview';
+    this.#navigateToId(slideId, 'replace');
   }
 
   #initResizeHandle(signal) {
