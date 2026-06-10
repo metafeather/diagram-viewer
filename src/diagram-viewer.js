@@ -11,6 +11,9 @@ import './diagram-canvas.js';
 import './diagram-nav-tree.js';
 import './diagram-help-modal.js';
 
+const STORAGE_KEY = 'diagramViewer.v1';
+const PERSIST_DELAY = 250;
+
 const styles = `
 :host {
   --color-bg: #fff;
@@ -184,6 +187,8 @@ class DiagramViewer extends HTMLElement {
   #forwardHistory = [];
   #abortController = null;
   #initialLoadDone = false;
+  #sourceData = null; // last loadData payload for reset()
+  #persistTimer = null;
 
   // Element refs
   #container;
@@ -206,11 +211,16 @@ class DiagramViewer extends HTMLElement {
     this.#initElements();
     this.#applyInitialAttributes();
     this.#initEventListeners();
-    this.#loadManifest();
+
+    // Try restoring from localStorage first; fall back to manifest fetch
+    if (!this.#loadFromStorage()) {
+      this.#loadManifest();
+    }
   }
 
   disconnectedCallback() {
     this.#disableKeyboardHandling();
+    clearTimeout(this.#persistTimer);
     this.#abortController?.abort();
     this.#abortController = null;
   }
@@ -241,6 +251,7 @@ class DiagramViewer extends HTMLElement {
   // ─── Public API ─────────────────────────────────────────────────────────
 
   loadData(data) {
+    this.#sourceData = data;
     this.#manifest = data;
     this.#basePath = this.getAttribute('base-path') || '';
 
@@ -251,15 +262,109 @@ class DiagramViewer extends HTMLElement {
   }
 
   reset() {
+    // Clear persisted snapshot
+    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+
     this.#manifest = null;
     this.#flatSlides = [];
     this.#currentIndex = 0;
     this.#navigationHistory = [];
     this.#forwardHistory = [];
-    this.#loadManifest();
+
+    // Re-run original load path
+    if (this.#sourceData) {
+      this.loadData(this.#sourceData);
+    } else {
+      this.#loadManifest();
+    }
   }
 
   // ─── Private ────────────────────────────────────────────────────────────
+
+  /**
+   * Attempt to restore state from localStorage snapshot.
+   * Returns true if a valid snapshot was restored successfully.
+   */
+  #loadFromStorage() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return false;
+
+      const snapshot = JSON.parse(raw);
+      if (snapshot.version !== 1 || !snapshot.manifest) return false;
+
+      this.#sourceData = snapshot.manifest;
+      this.#manifest = snapshot.manifest;
+      this.#basePath = snapshot.basePath ?? '';
+
+      this.#navTree.title = this.#manifest.name ?? 'Diagram';
+      this.#buildFlatSlideList();
+      this.#navTree.buildTree(this.#manifest, this.#basePath);
+
+      // Restore UI state
+      const ui = snapshot.ui ?? {};
+
+      if (typeof ui.zoomPercent === 'number') {
+        this.#zoomLevel = ui.zoomPercent / 100;
+        this.#canvas.zoomLevel = this.#zoomLevel;
+        this.#navTree.zoomPercent = ui.zoomPercent;
+      }
+
+      if (ui.sidebarOpen === false) {
+        this.#container.classList.add('sidebar-collapsed');
+      } else {
+        this.#container.classList.remove('sidebar-collapsed');
+      }
+
+      if (typeof ui.sidebarWidthPx === 'number' && ui.sidebarOpen !== false) {
+        this.#container.style.gridTemplateColumns = `${ui.sidebarWidthPx}px auto 1fr`;
+      }
+
+      // Restore slide — URL hash wins on explicit hashchange, but on reload
+      // prefer the saved currentSlideId over the hash if they differ
+      const hash = location.hash.slice(1);
+      const slideId = hash || ui.currentSlideId || this.getAttribute('start-at') || 'overview';
+      this.#navigateToId(slideId, 'replace');
+
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
+   * Persist current state to localStorage (debounced 250ms).
+   */
+  #persist() {
+    clearTimeout(this.#persistTimer);
+    this.#persistTimer = setTimeout(() => {
+      try {
+        const sidebarOpen = !this.#container.classList.contains('sidebar-collapsed');
+        const currentSlide = this.#flatSlides[this.#currentIndex];
+
+        // Compute sidebar width from grid columns
+        let sidebarWidthPx = null;
+        const cols = this.#container.style.gridTemplateColumns;
+        if (cols) {
+          const match = cols.match(/^([\d.]+)px/);
+          if (match) sidebarWidthPx = parseFloat(match[1]);
+        }
+
+        const snapshot = {
+          version: 1,
+          manifest: this.#manifest,
+          basePath: this.#basePath,
+          ui: {
+            currentSlideId: currentSlide?.id ?? null,
+            zoomPercent: Math.round(this.#zoomLevel * 100),
+            sidebarOpen,
+            sidebarWidthPx,
+          },
+        };
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+      } catch { /* quota exceeded or private browsing — silently ignore */ }
+    }, PERSIST_DELAY);
+  }
 
   #render() {
     this.shadowRoot.innerHTML = `
@@ -309,6 +414,7 @@ class DiagramViewer extends HTMLElement {
     // Sidebar toggle
     this.#sidebarToggleBtn.addEventListener('click', () => {
       this.#container.classList.remove('sidebar-collapsed');
+      this.#persist();
     }, { signal });
 
     // Nav tree events
@@ -321,6 +427,7 @@ class DiagramViewer extends HTMLElement {
     this.#navTree.addEventListener('sidebar-collapse', () => {
       this.#container.classList.add('sidebar-collapsed');
       this.#container.style.gridTemplateColumns = '';
+      this.#persist();
     }, { signal });
 
     this.#navTree.addEventListener('zoom-in', () => this.#zoomIn(), { signal });
@@ -336,6 +443,7 @@ class DiagramViewer extends HTMLElement {
     this.#canvas.addEventListener('zoom-change', (e) => {
       this.#zoomLevel = e.detail.zoomPercent / 100;
       this.#navTree.zoomPercent = e.detail.zoomPercent;
+      this.#persist();
     }, { signal });
 
     this.#canvas.addEventListener('iframe-keydown', (e) => {
@@ -385,6 +493,7 @@ class DiagramViewer extends HTMLElement {
         this.#resizeHandle.classList.remove('active');
         this.#container.classList.remove('resizing');
         this.#canvas.setResizing(false);
+        this.#persist();
       }
     }, { signal });
   }
@@ -491,6 +600,8 @@ class DiagramViewer extends HTMLElement {
       detail: { slide, index },
       bubbles: true,
     }));
+
+    this.#persist();
   }
 
   #navigateToId(id, historyMode = 'push') {
