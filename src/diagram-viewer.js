@@ -280,7 +280,7 @@ diagram-help-modal {
 `;
 
 class DiagramViewer extends HTMLElement {
-  static observedAttributes = ['manifest', 'base-path', 'sidebar', 'zoom', 'start-at'];
+  static observedAttributes = ['manifest', 'base-path', 'sidebar', 'zoom', 'start-at', 'bookmarkable', 'primary'];
 
   static #styles = new CSSStyleSheet();
   static { this.#styles.replaceSync(styles); }
@@ -298,6 +298,7 @@ class DiagramViewer extends HTMLElement {
   #initialLoadDone = false;
   #sourceData = null; // last loadData payload for reset()
   #persistTimer = null;
+  #hashChangeController = null; // separate abort for hashchange listener
 
   // Element refs
   #container;
@@ -340,6 +341,9 @@ class DiagramViewer extends HTMLElement {
     // sole viewer on the page and no namespaced key already exists.
     this.#migrateLegacyStorage();
 
+    // Resolve URL hash ownership based on bookmarkable/primary attributes
+    this.#resolveHashOwnership();
+
     // Try restoring from localStorage first; fall back to manifest fetch
     if (!this.#loadFromStorage()) {
       this.#loadManifest();
@@ -348,6 +352,44 @@ class DiagramViewer extends HTMLElement {
 
   #storageKey() {
     return `${STORAGE_PREFIX}:${this.#instanceId}`;
+  }
+
+  /**
+   * Returns true if this instance should own the URL hash.
+   * Requires the `bookmarkable` attribute. When multiple bookmarkable viewers
+   * exist, the one with `primary` wins.
+   */
+  #ownsHash() {
+    if (!this.hasAttribute('bookmarkable')) return false;
+    const all = document.querySelectorAll('diagram-viewer[bookmarkable]');
+    if (all.length <= 1) return true;
+    // Multiple bookmarkable viewers — only the primary one wins
+    if (this.hasAttribute('primary')) return true;
+    // Check if any has primary
+    const hasPrimary = [...all].some(el => el.hasAttribute('primary'));
+    if (!hasPrimary) {
+      console.warn(
+        '[diagram-viewer] Multiple bookmarkable viewers exist but none has the "primary" attribute. ' +
+        'No viewer will own the URL hash. Add primary to one instance.'
+      );
+    }
+    return false;
+  }
+
+  /**
+   * Re-evaluate hash ownership: register or unregister the hashchange listener.
+   */
+  #resolveHashOwnership() {
+    if (this.#hashChangeController) {
+      this.#hashChangeController.abort();
+      this.#hashChangeController = null;
+    }
+    if (this.#ownsHash()) {
+      this.#hashChangeController = new AbortController();
+      globalThis.addEventListener('hashchange', () => this.#loadFromHash(), {
+        signal: this.#hashChangeController.signal,
+      });
+    }
   }
 
   /**
@@ -374,6 +416,8 @@ class DiagramViewer extends HTMLElement {
     clearTimeout(this.#persistTimer);
     this.#abortController?.abort();
     this.#abortController = null;
+    this.#hashChangeController?.abort();
+    this.#hashChangeController = null;
   }
 
   attributeChangedCallback(name, oldValue, newValue) {
@@ -396,6 +440,10 @@ class DiagramViewer extends HTMLElement {
 
     if (name === 'manifest' && this.#container) {
       this.#loadManifest();
+    }
+
+    if ((name === 'bookmarkable' || name === 'primary') && this.#container) {
+      this.#resolveHashOwnership();
     }
   }
 
@@ -456,11 +504,11 @@ class DiagramViewer extends HTMLElement {
         this.#container.style.gridTemplateColumns = `${preservedUi.sidebarWidthPx}px auto 1fr`;
       }
       // Resolve slide — check if saved currentSlideId still exists
-      const hash = location.hash.slice(1);
+      const hash = this.#ownsHash() ? location.hash.slice(1) : '';
       let slideId = hash || preservedUi.currentSlideId;
       const slideExists = slideId && this.#flatSlides.some(s => s.id === slideId);
       if (!slideExists) {
-        slideId = this.getAttribute('start-at') || 'overview';
+        slideId = this.getAttribute('start-at') || this.#flatSlides[0]?.id || 'overview';
       }
       this.#navigateToId(slideId, 'replace');
     } else {
@@ -490,8 +538,10 @@ class DiagramViewer extends HTMLElement {
     this.#container.classList.remove('sidebar-collapsed');
     this.#container.style.gridTemplateColumns = '';
 
-    // Clear URL hash
-    history.replaceState(null, '', location.pathname + location.search);
+    // Clear URL hash (only if this viewer owns it)
+    if (this.#ownsHash()) {
+      history.replaceState(null, '', location.pathname + location.search);
+    }
 
     // Re-run original load path
     if (this.#sourceData) {
@@ -544,8 +594,8 @@ class DiagramViewer extends HTMLElement {
 
       // Restore slide — URL hash wins on explicit hashchange, but on reload
       // prefer the saved currentSlideId over the hash if they differ
-      const hash = location.hash.slice(1);
-      const slideId = hash || ui.currentSlideId || this.getAttribute('start-at') || 'overview';
+      const hash = this.#ownsHash() ? location.hash.slice(1) : '';
+      const slideId = hash || ui.currentSlideId || this.getAttribute('start-at') || this.#flatSlides[0]?.id || 'overview';
       this.#navigateToId(slideId, 'replace');
 
       return true;
@@ -689,9 +739,6 @@ class DiagramViewer extends HTMLElement {
 
     // Resize handle
     this.#initResizeHandle(signal);
-
-    // Hash change
-    globalThis.addEventListener('hashchange', () => this.#loadFromHash(), { signal });
 
     // Keyboard scoped to mouse hover
     this.#keyboardHandler = (e) => this.#handleKeyDown(e);
@@ -953,7 +1000,7 @@ class DiagramViewer extends HTMLElement {
     this.#canvas.loadSlide(slide);
 
     const newHash = `#${slide.id}`;
-    if (location.hash !== newHash) {
+    if (this.#ownsHash() && location.hash !== newHash) {
       history.replaceState(null, '', newHash);
     }
 
@@ -973,7 +1020,8 @@ class DiagramViewer extends HTMLElement {
   }
 
   #loadFromHash() {
-    const startAttr = this.getAttribute('start-at') || 'overview';
+    if (!this.#ownsHash()) return;
+    const startAttr = this.getAttribute('start-at') || this.#flatSlides[0]?.id || 'overview';
     const hash = location.hash.slice(1) || startAttr;
     this.#navigateToId(hash, 'replace');
   }
