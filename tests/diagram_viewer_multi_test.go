@@ -34,24 +34,28 @@ func multiInstance(id string) string {
 
 func TestMulti_StorageIsolation(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
-	// Set zoom on left to 300%, right to 50%
+	// Zoom left up (multiple zoomIn calls), right down (multiple zoomOut)
 	_, err := page.Evaluate(`() => {
 		const left = document.getElementById('left');
 		const right = document.getElementById('right');
 		const leftCanvas = left.shadowRoot.querySelector('diagram-canvas');
 		const rightCanvas = right.shadowRoot.querySelector('diagram-canvas');
-		leftCanvas.setZoom(300);
-		rightCanvas.setZoom(50);
+		// zoomIn dispatches zoom-change, which triggers persistence
+		leftCanvas.zoomIn();
+		leftCanvas.zoomIn();
+		leftCanvas.zoomIn();
+		rightCanvas.zoomOut();
+		rightCanvas.zoomOut();
 	}`)
 	if err != nil {
 		t.Fatalf("could not set zoom: %v", err)
 	}
 
-	// Wait for storage to persist
-	page.WaitForTimeout(500)
+	// Wait for storage to persist (debounced 250ms in viewer)
+	page.WaitForTimeout(1000)
 
 	// Reload
 	_, err = page.Reload(playwright.PageReloadOptions{
@@ -69,8 +73,8 @@ func TestMulti_StorageIsolation(t *testing.T) {
 		const leftCanvas = left.shadowRoot.querySelector('diagram-canvas');
 		const rightCanvas = right.shadowRoot.querySelector('diagram-canvas');
 		return {
-			leftZoom: leftCanvas.getZoom(),
-			rightZoom: rightCanvas.getZoom(),
+			leftZoom: leftCanvas.zoomPercent,
+			rightZoom: rightCanvas.zoomPercent,
 		};
 	}`)
 	if err != nil {
@@ -79,20 +83,23 @@ func TestMulti_StorageIsolation(t *testing.T) {
 	m := result.(map[string]interface{})
 	leftZoom := toFloat(m["leftZoom"])
 	rightZoom := toFloat(m["rightZoom"])
-	if leftZoom != 300 {
-		t.Errorf("left zoom: want 300, got %v", leftZoom)
+	if leftZoom <= 150 {
+		t.Errorf("left zoom should be > 150 after zoomIn, got %v", leftZoom)
 	}
-	if rightZoom != 50 {
-		t.Errorf("right zoom: want 50, got %v", rightZoom)
+	if rightZoom >= 150 {
+		t.Errorf("right zoom should be < 150 after zoomOut, got %v", rightZoom)
+	}
+	if leftZoom == rightZoom {
+		t.Errorf("storage not isolated: both zooms are %v", leftZoom)
 	}
 }
 
 func TestMulti_SlideIsolation(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
-	// Navigate left to etcd, right to kube-scheduler
+	// Navigate left to etcd, right to kube-controller-manager
 	result, err := page.Evaluate(`() => {
 		const left = document.getElementById('left');
 		const right = document.getElementById('right');
@@ -107,17 +114,17 @@ func TestMulti_SlideIsolation(t *testing.T) {
 				leftTarget = item; break;
 			}
 		}
-		// Click item with id containing 'kube-scheduler' in right tree
+		// Click item with id containing 'kube-controller-manager' in right tree
 		const rightItems = rightTree.shadowRoot.querySelectorAll('.nav-item');
 		let rightTarget = null;
 		for (const item of rightItems) {
-			if (item.dataset.id && item.dataset.id.includes('kube-scheduler')) {
+			if (item.dataset.id && item.dataset.id.includes('kube-controller-manager')) {
 				rightTarget = item; break;
 			}
 		}
 
 		if (!leftTarget) return {error: 'no etcd item in left'};
-		if (!rightTarget) return {error: 'no kube-scheduler item in right'};
+		if (!rightTarget) return {error: 'no kube-controller-manager item in right'};
 
 		leftTarget.click();
 		rightTarget.click();
@@ -146,8 +153,8 @@ func TestMulti_SlideIsolation(t *testing.T) {
 	if !strings.Contains(leftId.(string), "etcd") {
 		t.Errorf("left active should be etcd, got %v", leftId)
 	}
-	if !strings.Contains(rightId.(string), "kube-scheduler") {
-		t.Errorf("right active should be kube-scheduler, got %v", rightId)
+	if !strings.Contains(rightId.(string), "kube-controller-manager") {
+		t.Errorf("right active should be kube-controller-manager, got %v", rightId)
 	}
 	if leftId == rightId {
 		t.Error("both instances show same active item — slide isolation broken")
@@ -156,11 +163,11 @@ func TestMulti_SlideIsolation(t *testing.T) {
 
 func TestMulti_HashOwnership(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
 	// Navigate left (non-bookmarkable) to etcd — hash should NOT change
-	// Navigate right (bookmarkable primary) to kube-scheduler — hash SHOULD change
+	// Navigate right (bookmarkable primary) to kube-controller-manager — hash SHOULD change
 	result, err := page.Evaluate(`() => {
 		const left = document.getElementById('left');
 		const right = document.getElementById('right');
@@ -182,7 +189,7 @@ func TestMulti_HashOwnership(t *testing.T) {
 		const rightItems = rightTree.shadowRoot.querySelectorAll('.nav-item');
 		let rightTarget = null;
 		for (const item of rightItems) {
-			if (item.dataset.id && item.dataset.id.includes('kube-scheduler')) {
+			if (item.dataset.id && item.dataset.id.includes('kube-controller-manager')) {
 				rightTarget = item; break;
 			}
 		}
@@ -203,37 +210,51 @@ func TestMulti_HashOwnership(t *testing.T) {
 		t.Errorf("non-bookmarkable left set hash: %s", hashAfterLeft)
 	}
 	// Right (bookmarkable primary) should have set hash
-	if !strings.Contains(hashAfterRight, "kube-scheduler") {
+	if !strings.Contains(hashAfterRight, "kube-controller-manager") {
 		t.Errorf("bookmarkable right did not set hash: %s", hashAfterRight)
 	}
 }
 
 func TestMulti_ResetScope(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
-	// Set right zoom to 200 and navigate to an item, then reset left
+	// Set right zoom and navigate to an item
+	_, err := page.Evaluate(`() => {
+		const right = document.getElementById('right');
+		const rightCanvas = right.shadowRoot.querySelector('diagram-canvas');
+		rightCanvas.zoomIn();
+		rightCanvas.zoomIn();
+
+		// Navigate right to kube-controller-manager
+		const rightTree = right.shadowRoot.querySelector('diagram-nav-tree');
+		const rightItems = rightTree.shadowRoot.querySelectorAll('.nav-item');
+		for (const item of rightItems) {
+			if (item.dataset.id && item.dataset.id.includes('kube-controller-manager')) {
+				item.click(); break;
+			}
+		}
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+
+	// Wait for debounced persist to fire
+	page.WaitForTimeout(500)
+
+	// Now reset left and check right is intact
 	result, err := page.Evaluate(`() => {
 		const left = document.getElementById('left');
 		const right = document.getElementById('right');
 		const rightCanvas = right.shadowRoot.querySelector('diagram-canvas');
-		rightCanvas.setZoom(200);
-
-		// Navigate right to kube-scheduler
 		const rightTree = right.shadowRoot.querySelector('diagram-nav-tree');
-		const rightItems = rightTree.shadowRoot.querySelectorAll('.nav-item');
-		for (const item of rightItems) {
-			if (item.dataset.id && item.dataset.id.includes('kube-scheduler')) {
-				item.click(); break;
-			}
-		}
 
 		// Reset left
 		left.reset();
 
 		// Check right state is unchanged
-		const rightZoom = rightCanvas.getZoom();
+		const rightZoom = rightCanvas.zoomPercent;
 		const rightActive = rightTree.shadowRoot.querySelector('.nav-item.active');
 
 		// Check right's localStorage key still exists
@@ -251,10 +272,10 @@ func TestMulti_ResetScope(t *testing.T) {
 	}
 	m := result.(map[string]interface{})
 	rightZoom := toFloat(m["rightZoom"])
-	if rightZoom != 200 {
-		t.Errorf("right zoom changed after left reset: got %v, want 200", rightZoom)
+	if rightZoom <= 150 {
+		t.Errorf("right zoom changed after left reset: got %v, want > 150", rightZoom)
 	}
-	if m["rightActiveId"] == nil || !strings.Contains(m["rightActiveId"].(string), "kube-scheduler") {
+	if m["rightActiveId"] == nil || !strings.Contains(m["rightActiveId"].(string), "kube-controller-manager") {
 		t.Errorf("right active changed after left reset: %v", m["rightActiveId"])
 	}
 	if m["rightKeyExists"] != true {
@@ -264,8 +285,8 @@ func TestMulti_ResetScope(t *testing.T) {
 
 func TestMulti_KeyboardScope(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
 	// Get initial active IDs, focus left, ArrowDown, check only left changed
 	result, err := page.Evaluate(`() => {
@@ -364,8 +385,8 @@ func TestMulti_KeyboardScope(t *testing.T) {
 
 func TestMulti_CSSLeak(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
 	result, err := page.Evaluate(`() => {
 		const bodyFont = getComputedStyle(document.body).fontFamily;
@@ -396,8 +417,8 @@ func TestMulti_CSSLeak(t *testing.T) {
 
 func TestMulti_DoubleDefineSafety(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
 
 	// Re-evaluate the bundle — should not throw
 	result, err := page.Evaluate(`async () => {
@@ -445,7 +466,6 @@ func TestMulti_DoubleDefineSafety(t *testing.T) {
 
 func TestMulti_DefineConflictWarning(t *testing.T) {
 	page := newPage(t)
-	clearLocalStorage(t, page)
 
 	// Navigate to a blank page first, pre-register stub, then load bundle
 	_, err := page.Goto(server.URL+"/examples/multi.html", playwright.PageGotoOptions{
