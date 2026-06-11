@@ -344,10 +344,10 @@ class DiagramNavTree extends HTMLElement {
     this.#updateActiveHighlight();
   }
 
-  /** Set active with parentId for step highlighting */
-  setActive(slideId, parentId) {
+  /** Set active slide for highlighting */
+  setActive(slideId) {
     this.#activeSlideId = slideId;
-    this.#updateActiveHighlight(parentId);
+    this.#updateActiveHighlight();
   }
 
   buildTree(manifest, basePath) {
@@ -454,13 +454,11 @@ class DiagramNavTree extends HTMLElement {
     parent.appendChild(group);
   }
 
-  #updateActiveHighlight(parentId = null) {
+  #updateActiveHighlight() {
     if (!this.#navTreeEl) return;
 
     for (const item of this.shadowRoot.querySelectorAll('.nav-item')) {
-      const isActive = item.dataset.id === this.#activeSlideId ||
-        (parentId && item.dataset.id === parentId);
-      item.classList.toggle('active', isActive);
+      item.classList.toggle('active', item.dataset.id === this.#activeSlideId);
     }
 
     for (const bullet of this.shadowRoot.querySelectorAll('.step-bullet')) {

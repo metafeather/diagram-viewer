@@ -904,7 +904,7 @@ class DiagramViewer extends HTMLElement {
       history.replaceState(null, '', newHash);
     }
 
-    this.#navTree.setActive(slide.id, slide.parentId);
+    this.#navTree.setActive(slide.id);
 
     this.dispatchEvent(new CustomEvent('slide-change', {
       detail: { slide, index },
