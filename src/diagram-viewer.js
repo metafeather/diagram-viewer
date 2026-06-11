@@ -336,6 +336,10 @@ class DiagramViewer extends HTMLElement {
     this.#applyInitialAttributes();
     this.#initEventListeners();
 
+    // One-time legacy migration: adopt unnamespaced key only if this is the
+    // sole viewer on the page and no namespaced key already exists.
+    this.#migrateLegacyStorage();
+
     // Try restoring from localStorage first; fall back to manifest fetch
     if (!this.#loadFromStorage()) {
       this.#loadManifest();
@@ -344,6 +348,25 @@ class DiagramViewer extends HTMLElement {
 
   #storageKey() {
     return `${STORAGE_PREFIX}:${this.#instanceId}`;
+  }
+
+  /**
+   * Migrate legacy unnamespaced storage key to the namespaced one.
+   * Only runs when: (1) legacy key exists, (2) this is the only viewer on the
+   * page, and (3) no namespaced key already exists for this instance.
+   */
+  #migrateLegacyStorage() {
+    try {
+      const legacyKey = STORAGE_PREFIX;
+      const namespacedKey = this.#storageKey();
+      if (localStorage.getItem(namespacedKey)) return; // already have own data
+      const legacyRaw = localStorage.getItem(legacyKey);
+      if (!legacyRaw) return; // nothing to migrate
+      // Only migrate if this is the sole viewer on the page
+      if (document.querySelectorAll('diagram-viewer').length > 1) return;
+      localStorage.setItem(namespacedKey, legacyRaw);
+      localStorage.removeItem(legacyKey);
+    } catch { /* ignore — private browsing or quota */ }
   }
 
   disconnectedCallback() {
