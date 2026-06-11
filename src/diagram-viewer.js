@@ -47,12 +47,11 @@ const styles = `
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   font-size: 1rem;
   grid-template-areas:
-    "toolbar        toolbar        toolbar"
     "sidebar-header resize-handle viewer"
     "sidebar-nav    resize-handle viewer"
     "sidebar-footer resize-handle viewer";
   grid-template-columns: var(--sidebar-width) auto 1fr;
-  grid-template-rows: auto auto 1fr auto;
+  grid-template-rows: auto 1fr auto;
   height: 100%;
   line-height: 1.5;
   overflow: hidden;
@@ -157,37 +156,6 @@ diagram-help-modal {
   display: contents;
 }
 
-/* ─── Toolbar ────────────────────────────────────────────────────────── */
-
-.toolbar {
-  align-items: center;
-  background: var(--color-bg);
-  border-block-end: 1px solid var(--color-border);
-  display: flex;
-  gap: 0.375rem;
-  grid-area: toolbar;
-  justify-content: flex-end;
-  padding: 0.25rem 0.5rem;
-}
-
-.toolbar button {
-  background: var(--color-bg);
-  border: 1px solid var(--color-border);
-  border-radius: 0.25rem;
-  color: var(--color-text-light);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.75rem;
-  font-weight: 500;
-  line-height: 1;
-  padding: 0.25rem 0.5rem;
-}
-
-.toolbar button:hover {
-  background: var(--color-bg-hover);
-  color: var(--color-text);
-}
-
 /* ─── JSON Dialog ────────────────────────────────────────────────────── */
 
 .json-dialog {
@@ -275,8 +243,8 @@ diagram-help-modal {
 @media (width <= 48rem) {
   .container {
     grid-template-columns: 1fr;
-    grid-template-rows: auto 1fr;
-    grid-template-areas: "toolbar" "viewer";
+    grid-template-rows: 1fr;
+    grid-template-areas: "viewer";
   }
 
   .container diagram-nav-tree,
@@ -543,10 +511,6 @@ class DiagramViewer extends HTMLElement {
   #render() {
     this.shadowRoot.innerHTML = `
       <div class="container">
-        <div class="toolbar">
-          <button class="toolbar-json" title="Import/Export JSON">JSON</button>
-          <button class="toolbar-reset" title="Reset to defaults">Reset</button>
-        </div>
         <button class="sidebar-toggle" title="Show sidebar">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
@@ -653,28 +617,30 @@ class DiagramViewer extends HTMLElement {
     this.#container.addEventListener('mouseleave', () => this.#disableKeyboardHandling(), { signal });
 
     // Toolbar + dialog
-    this.#initToolbar(signal);
-  }
-
-  #initToolbar(signal) {
-    const $ = (s) => this.shadowRoot.querySelector(s);
-    const dialog = $('.json-dialog');
-    const textarea = dialog.querySelector('textarea');
-    const errorEl = $('.json-dialog-error');
-    const copiedEl = $('.json-dialog-copied');
-
-    // JSON button — open dialog
-    $('.toolbar-json').addEventListener('click', () => {
+    this.#navTree.addEventListener('json-open', () => {
+      const dialog = this.shadowRoot.querySelector('.json-dialog');
+      const textarea = dialog.querySelector('textarea');
+      const errorEl = this.shadowRoot.querySelector('.json-dialog-error');
+      const copiedEl = this.shadowRoot.querySelector('.json-dialog-copied');
       errorEl.textContent = '';
       copiedEl.textContent = '';
       textarea.value = JSON.stringify(this.#getSnapshot(), null, 2);
       dialog.showModal();
     }, { signal });
 
-    // Reset button
-    $('.toolbar-reset').addEventListener('click', () => {
+    this.#navTree.addEventListener('reset', () => {
       this.reset();
     }, { signal });
+
+    this.#initJsonDialog(signal);
+  }
+
+  #initJsonDialog(signal) {
+    const $ = (s) => this.shadowRoot.querySelector(s);
+    const dialog = $('.json-dialog');
+    const textarea = dialog.querySelector('textarea');
+    const errorEl = $('.json-dialog-error');
+    const copiedEl = $('.json-dialog-copied');
 
     // Copy
     $('.json-copy').addEventListener('click', async () => {
