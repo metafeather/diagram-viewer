@@ -167,6 +167,32 @@ func TestNavTree_KeyboardNavigation(t *testing.T) {
 	}
 }
 
+func TestNavTree_FooterHasNoJsonOrResetButtons(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+	loadFixture(t, page, "examples/kubernetes/manifest.json")
+
+	result, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const sr = tree.shadowRoot;
+		const jsonBtn = sr.querySelector('.json-btn');
+		const resetBtn = sr.querySelector('.reset-btn');
+		return {hasJson: !!jsonBtn, hasReset: !!resetBtn};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if m["hasJson"] == true {
+		t.Fatal("sidebar footer should no longer contain a JSON button")
+	}
+	if m["hasReset"] == true {
+		t.Fatal("sidebar footer should no longer contain a Reset button")
+	}
+}
+
 func TestNavTree_ActiveChildParentNotActive(t *testing.T) {
 	page := newPage(t)
 	navigateToIndex(t, page)

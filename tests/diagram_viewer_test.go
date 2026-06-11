@@ -66,11 +66,9 @@ func TestViewer_JSONDialogExportRoundTrips(t *testing.T) {
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
 
-	// Open JSON dialog via sidebar-footer button
+	// Open JSON dialog via public API (buttons moved to diagram-loader)
 	_, err := page.Evaluate(`() => {
-		const viewer = document.querySelector('diagram-viewer');
-		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
-		tree.shadowRoot.querySelector('.json-btn').click();
+		document.querySelector('diagram-viewer').openJsonDialog();
 	}`)
 	if err != nil {
 		t.Fatalf("could not open JSON dialog: %v", err)
@@ -112,9 +110,9 @@ func TestViewer_JSONDialogImportReplaces(t *testing.T) {
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
-		// Open dialog via nav-tree footer button
+		// Open dialog via public API (button moved to diagram-loader)
+		viewer.openJsonDialog();
 		const tree = sr.querySelector('diagram-nav-tree');
-		tree.shadowRoot.querySelector('.json-btn').click();
 		const ta = sr.querySelector('.json-dialog-backdrop textarea');
 		const snap = JSON.parse(ta.value);
 		snap.manifest.name = "Modified";
@@ -142,7 +140,7 @@ func TestViewer_JSONDialogImportErrorKeepsExisting(t *testing.T) {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
 		const tree = sr.querySelector('diagram-nav-tree');
-		tree.shadowRoot.querySelector('.json-btn').click();
+		viewer.openJsonDialog();
 		const ta = sr.querySelector('.json-dialog-backdrop textarea');
 		const originalSnap = ta.value;
 		// Put invalid JSON
@@ -175,9 +173,7 @@ func TestViewer_ResetClearsAndReapplies(t *testing.T) {
 
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
-		const sr = viewer.shadowRoot;
-		const tree = sr.querySelector('diagram-nav-tree');
-		tree.shadowRoot.querySelector('.reset-btn').click();
+		viewer.reset();
 		// Wait for persist debounce (250ms + buffer)
 		return new Promise(resolve => {
 			setTimeout(() => {
@@ -213,12 +209,12 @@ func TestViewer_ResetClearsZoomSidebarHashSlide(t *testing.T) {
 	}`)
 	page.WaitForTimeout(300)
 
-	// Now click Reset
+	// Now click Reset via public API
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
 		const tree = sr.querySelector('diagram-nav-tree');
-		tree.shadowRoot.querySelector('.reset-btn').click();
+		viewer.reset();
 		return new Promise(resolve => {
 			setTimeout(() => {
 				const zoomLevel = tree.shadowRoot.querySelector('.zoom-level').textContent;
