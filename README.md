@@ -15,6 +15,10 @@ Single vanilla HTML file hosting a standalone WebComponent + localstorage displa
 2. Clicking on areas of an image should move to the target in the hierarchy
 3. The sidebar is another way to navigate through the hierarchy
 
+## Multi-instance
+
+See `examples/multi.html` for a side-by-side demo of two `<diagram-viewer>` elements sharing one manifest, with only the right instance owning the URL hash.
+
 ## References
 
 - D2 Tour https://d2lang.com/tour/intro/

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-instance Demo — Diagram Viewer</title>
+  <link rel="stylesheet" href="../dist/diagram-viewer.css">
+  <style>
+    body {
+      margin: 0;
+      padding: 1rem;
+      font-family: system-ui, sans-serif;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      height: calc(100vh - 2rem);
+    }
+    .panel {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    .panel caption {
+      display: block;
+      padding: 0.5rem;
+      font-size: 0.875rem;
+      color: #555;
+      background: #f5f5f5;
+      border-radius: 4px 4px 0 0;
+    }
+    .panel diagram-viewer {
+      flex: 1;
+      min-height: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="grid">
+    <div class="panel">
+      <caption><strong>Left instance</strong> — does NOT own the URL hash</caption>
+      <diagram-viewer id="left" base-path="kubernetes" start-at="overview"></diagram-viewer>
+    </div>
+    <div class="panel">
+      <caption><strong>Right instance</strong> — owns the URL hash (bookmarkable primary)</caption>
+      <diagram-viewer id="right" base-path="kubernetes" start-at="kube-controller-manager" bookmarkable primary></diagram-viewer>
+    </div>
+  </div>
+
+  <script type="module" src="../dist/diagram-viewer.js"></script>
+  <script type="module">
+    const resp = await fetch("kubernetes/manifest.json");
+    const data = await resp.json();
+    document.getElementById("left").loadData(data);
+    document.getElementById("right").loadData(data);
+  </script>
+</body>
+</html>
