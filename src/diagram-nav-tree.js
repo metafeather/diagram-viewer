@@ -146,6 +146,13 @@ const styles = `
   text-decoration: none;
 }
 
+.nav-item:focus {
+  outline: none;
+}
+.nav-item:focus-visible {
+  outline: 2px solid var(--color-primary, #6366f1);
+  outline-offset: -2px;
+}
 .nav-item:hover {
   background: var(--color-bg-hover, #f3f4f6);
   color: var(--color-text, #2e3346);
