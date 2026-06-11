@@ -7,7 +7,8 @@
   <link rel="stylesheet" href="dist/diagram-viewer.css">
 </head>
 <body>
-  <diagram-viewer base-path="examples/kubernetes"></diagram-viewer>
+  <diagram-loader for="#viewer"></diagram-loader>
+  <diagram-viewer id="viewer" base-path="examples/kubernetes"></diagram-viewer>
 
   <footer style="margin-top:1rem;font-size:0.875rem">
     <a href="examples/multi.html">See multi-instance demo</a>
@@ -17,7 +18,7 @@
   <script type="module">
     const resp = await fetch("examples/kubernetes/manifest.json");
     const data = await resp.json();
-    document.querySelector("diagram-viewer").loadData(data);
+    document.getElementById("viewer").loadData(data);
   </script>
 </body>
 </html>

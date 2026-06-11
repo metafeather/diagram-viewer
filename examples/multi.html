@@ -40,10 +40,12 @@
   <div class="grid">
     <div class="panel">
       <caption><strong>Left instance</strong> — does NOT own the URL hash</caption>
+      <diagram-loader for="#left"></diagram-loader>
       <diagram-viewer id="left" base-path="kubernetes" start-at="overview"></diagram-viewer>
     </div>
     <div class="panel">
       <caption><strong>Right instance</strong> — owns the URL hash (bookmarkable primary)</caption>
+      <diagram-loader for="#right"></diagram-loader>
       <diagram-viewer id="right" base-path="kubernetes" start-at="kube-controller-manager" bookmarkable primary></diagram-viewer>
     </div>
   </div>
