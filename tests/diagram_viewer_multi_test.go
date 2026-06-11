@@ -383,6 +383,77 @@ func TestMulti_KeyboardScope(t *testing.T) {
 	}
 }
 
+func TestMulti_KeyboardWorksAfterSidebarClickInOneInstance(t *testing.T) {
+	page := newPage(t)
+	navigateToMulti(t, page)
+	clearLocalStorage(t, page)
+
+	// Get initial active IDs for both viewers
+	initial, err := page.Evaluate(`() => {
+		const left = document.getElementById('left');
+		const right = document.getElementById('right');
+		const leftTree = left.shadowRoot.querySelector('diagram-nav-tree');
+		const rightTree = right.shadowRoot.querySelector('diagram-nav-tree');
+		const leftActive = leftTree.shadowRoot.querySelector('.nav-item.active');
+		const rightActive = rightTree.shadowRoot.querySelector('.nav-item.active');
+		return {
+			leftId: leftActive ? leftActive.dataset.id : null,
+			rightId: rightActive ? rightActive.dataset.id : null,
+		};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	before := initial.(map[string]interface{})
+
+	// Click a nav link in the LEFT viewer — no explicit .focus() call
+	_, err = page.Evaluate(`() => {
+		const left = document.getElementById('left');
+		const leftTree = left.shadowRoot.querySelector('diagram-nav-tree');
+		const items = leftTree.shadowRoot.querySelectorAll('.nav-item');
+		if (items.length < 2) throw new Error('not enough nav items');
+		// Click the second item (first non-active one typically)
+		items[1].click();
+	}`)
+	if err != nil {
+		t.Fatalf("click failed: %v", err)
+	}
+	page.WaitForTimeout(500)
+
+	// Press ArrowDown — the click alone must arm the keyboard for left
+	page.Keyboard().Press("ArrowDown")
+	page.WaitForTimeout(300)
+
+	// Read active IDs for both viewers
+	result, err := page.Evaluate(`() => {
+		const left = document.getElementById('left');
+		const right = document.getElementById('right');
+		const leftTree = left.shadowRoot.querySelector('diagram-nav-tree');
+		const rightTree = right.shadowRoot.querySelector('diagram-nav-tree');
+		const leftActive = leftTree.shadowRoot.querySelector('.nav-item.active');
+		const rightActive = rightTree.shadowRoot.querySelector('.nav-item.active');
+		return {
+			leftId: leftActive ? leftActive.dataset.id : null,
+			rightId: rightActive ? rightActive.dataset.id : null,
+		};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	after := result.(map[string]interface{})
+
+	// Left viewer's active slide must have changed (click + ArrowDown)
+	if after["leftId"] == before["leftId"] {
+		t.Error("left viewer active slide did not change after click + ArrowDown")
+	}
+
+	// Right viewer's active slide must NOT have changed
+	if after["rightId"] != before["rightId"] {
+		t.Errorf("right viewer was affected by left click+ArrowDown: before=%v after=%v",
+			before["rightId"], after["rightId"])
+	}
+}
+
 func TestMulti_CSSLeak(t *testing.T) {
 	page := newPage(t)
 	navigateToMulti(t, page)

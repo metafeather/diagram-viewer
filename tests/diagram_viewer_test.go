@@ -1,6 +1,7 @@
 package tests
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/playwright-community/playwright-go"
@@ -305,5 +306,66 @@ func TestViewer_LocalStoragePersistenceAcrossReload(t *testing.T) {
 	}
 	if toFloat(after) != beforeZoom {
 		t.Fatalf("zoom not restored: before=%v after=%v", beforeZoom, toFloat(after))
+	}
+}
+
+func TestViewer_KeyboardWorksAfterSidebarClick(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+	loadFixture(t, page, "examples/kubernetes/manifest.json")
+
+	// Click the 'etcd' nav link via shadow-DOM piercing JS
+	_, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const items = tree.shadowRoot.querySelectorAll('.nav-item');
+		for (const item of items) {
+			if (item.dataset.id && item.dataset.id.includes('etcd')) {
+				item.click();
+				return;
+			}
+		}
+		throw new Error('no etcd nav item found');
+	}`)
+	if err != nil {
+		t.Fatalf("click etcd failed: %v", err)
+	}
+
+	page.WaitForTimeout(500)
+
+	// Read current active slide id; assert it is 'etcd'
+	activeId, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const active = tree.shadowRoot.querySelector('.nav-item.active');
+		return active ? active.dataset.id : null;
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	if activeId == nil || !strings.Contains(activeId.(string), "etcd") {
+		t.Fatalf("expected active slide to be etcd, got %v", activeId)
+	}
+
+	// Press ArrowDown — no explicit .focus() call; the click alone must arm keyboard
+	page.Keyboard().Press("ArrowDown")
+	page.WaitForTimeout(300)
+
+	// Read new active slide id; assert it differs from 'etcd'
+	newActiveId, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const active = tree.shadowRoot.querySelector('.nav-item.active');
+		return active ? active.dataset.id : null;
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	if newActiveId == nil {
+		t.Fatal("no active slide after ArrowDown")
+	}
+	if newActiveId == activeId {
+		t.Fatalf("ArrowDown after sidebar click did not advance slide: still %v", activeId)
 	}
 }
