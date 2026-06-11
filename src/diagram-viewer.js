@@ -725,6 +725,7 @@ class DiagramViewer extends HTMLElement {
       this.#navigationHistory = [];
       this.#forwardHistory = [];
       this.#navigateToId(e.detail.id, 'replace');
+      this.focus({ preventScroll: true });
     }, { signal });
 
     this.#navTree.addEventListener('sidebar-collapse', () => {
