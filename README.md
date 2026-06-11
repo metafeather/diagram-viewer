@@ -15,9 +15,42 @@ Single vanilla HTML file hosting a standalone WebComponent + localstorage displa
 2. Clicking on areas of an image should move to the target in the hierarchy
 3. The sidebar is another way to navigate through the hierarchy
 
+## Diagram Loader
+
+The `<diagram-loader>` custom element provides a file-loading toolbar that targets a specific `<diagram-viewer>` instance via CSS selector.
+
+### Usage
+
+```html
+<diagram-loader for="#my-viewer"></diagram-loader>
+<diagram-viewer id="my-viewer"></diagram-viewer>
+```
+
+### Attributes
+
+| Attribute | Description |
+|-----------|-------------|
+| `for`     | CSS selector identifying the target `<diagram-viewer>` element (e.g. `#my-viewer`, `.viewer:first-of-type`). |
+
+### Controls
+
+| Control | Description |
+|---------|-------------|
+| Text input | Path/URL to a diagram manifest. Press Enter or click **Load**. |
+| **Load** | Fetches the manifest from the entered URL and loads it into the target viewer. |
+| **JSON** | Opens the JSON-paste dialog on the target viewer (previously in the sidebar). |
+| **Reset** | Clears the viewer state (previously in the sidebar). |
+
+### Design notes
+
+- **Public-method communication** — the loader calls methods directly on the target element (`loadFromUrl`, `openJsonDialog`, `reset`) rather than dispatching events. This keeps the coupling explicit and avoids event-ordering issues.
+- **Base-path derivation** — the viewer (not the loader) derives the base path from the URL passed to `loadFromUrl`, stripping the filename to resolve relative image paths.
+
 ## Multi-instance
 
 See `examples/multi.html` for a side-by-side demo of two `<diagram-viewer>` elements sharing one manifest, with only the right instance owning the URL hash.
+
+Each viewer can have its own `<diagram-loader>` pointed at it via the `for` attribute, allowing independent loading controls per instance.
 
 ## References
 
