@@ -298,7 +298,10 @@ class DiagramCanvas extends HTMLElement {
 
   #handleSvgDimensions(svg) {
     const iframeDoc = svg.ownerDocument;
-    if (iframeDoc && !iframeDoc.head.querySelector('style[data-viewer]')) {
+    // When a browser loads an SVG file directly, documentElement is the <svg>
+    // itself — there is no HTML wrapper, so <head> and <body> are null. The
+    // body-margin reset is unnecessary in that case, so we safely skip injection.
+    if (iframeDoc?.head && !iframeDoc.head.querySelector('style[data-viewer]')) {
       const styleEl = iframeDoc.createElement('style');
       styleEl.setAttribute('data-viewer', 'true');
       styleEl.textContent = 'html, body { margin: 0; padding: 0; } svg { display: block; }';
