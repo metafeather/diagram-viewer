@@ -43,7 +43,12 @@ const styles = `
   --sidebar-width: 15rem;
   display: block;
   height: 100%;
+  outline: none;
   width: 100%;
+}
+
+:host(:focus-within) {
+  outline: none;
 }
 
 * {
@@ -307,7 +312,6 @@ class DiagramViewer extends HTMLElement {
   #helpModal;
   #resizeHandle;
   #sidebarToggleBtn;
-  #keyboardHandler = null;
 
   constructor() {
     super();
@@ -317,6 +321,11 @@ class DiagramViewer extends HTMLElement {
 
   connectedCallback() {
     this.#abortController = new AbortController();
+
+    // Make host focusable so :focus-within works for keyboard scoping
+    if (!this.hasAttribute('tabindex')) {
+      this.setAttribute('tabindex', '-1');
+    }
 
     // Resolve stable per-instance identity
     if (this.id) {
@@ -412,7 +421,6 @@ class DiagramViewer extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.#disableKeyboardHandling();
     clearTimeout(this.#persistTimer);
     this.#abortController?.abort();
     this.#abortController = null;
@@ -740,10 +748,8 @@ class DiagramViewer extends HTMLElement {
     // Resize handle
     this.#initResizeHandle(signal);
 
-    // Keyboard scoped to mouse hover
-    this.#keyboardHandler = (e) => this.#handleKeyDown(e);
-    this.#container.addEventListener('mouseenter', () => this.#enableKeyboardHandling(), { signal });
-    this.#container.addEventListener('mouseleave', () => this.#disableKeyboardHandling(), { signal });
+    // Keyboard scoped to focus-within (host keydown in capture phase)
+    this.addEventListener('keydown', (e) => this.#handleKeyDown(e), { signal, capture: true });
 
     // Toolbar + dialog
     this.#navTree.addEventListener('json-open', () => {
@@ -1066,14 +1072,6 @@ class DiagramViewer extends HTMLElement {
     } else {
       this.requestFullscreen();
     }
-  }
-
-  #enableKeyboardHandling() {
-    document.addEventListener('keydown', this.#keyboardHandler);
-  }
-
-  #disableKeyboardHandling() {
-    document.removeEventListener('keydown', this.#keyboardHandler);
   }
 
   #handleKeyDown(e) {
