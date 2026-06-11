@@ -468,6 +468,7 @@ class DiagramViewer extends HTMLElement {
   // ─── Public API ─────────────────────────────────────────────────────────
 
   loadData(data) {
+    this.#clearManifestError();
     // ── v0 shape validation ──────────────────────────────────────────────
     if (!data || typeof data !== 'object' || !Array.isArray(data.layers)) {
       throw new Error(
@@ -987,7 +988,16 @@ class DiagramViewer extends HTMLElement {
     }
   }
 
+  #clearManifestError() {
+    this.#container.querySelectorAll(':scope > .error').forEach(el => el.remove());
+    if (this.#canvas.style.display === 'none') {
+      this.#canvas.style.display = '';
+    }
+    this.#container.classList.remove('sidebar-collapsed');
+  }
+
   #showManifestError(manifestPath, error) {
+    this.#clearManifestError();
     this.#container.classList.add('sidebar-collapsed');
     // Insert error into the canvas area
     const errorEl = document.createElement('div');
