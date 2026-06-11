@@ -423,6 +423,19 @@ class DiagramViewer extends HTMLElement {
     this.#navigationHistory = [];
     this.#forwardHistory = [];
 
+    // Reset zoom to default (from attribute or 1.5)
+    const zoomAttr = parseInt(this.getAttribute('zoom'), 10);
+    this.#zoomLevel = (zoomAttr > 0 && isFinite(zoomAttr)) ? zoomAttr / 100 : 1.5;
+    this.#canvas.zoomLevel = this.#zoomLevel;
+    this.#navTree.zoomPercent = Math.round(this.#zoomLevel * 100);
+
+    // Open sidebar and clear custom width
+    this.#container.classList.remove('sidebar-collapsed');
+    this.#container.style.gridTemplateColumns = '';
+
+    // Clear URL hash
+    history.replaceState(null, '', location.pathname + location.search);
+
     // Re-run original load path
     if (this.#sourceData) {
       this.loadData(this.#sourceData);
