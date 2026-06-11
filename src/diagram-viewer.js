@@ -1,3 +1,5 @@
+import "./diagram-loader.js";
+
 /**
  * <diagram-viewer> — parent custom element that owns state, loads manifest,
  * builds flat slide list, owns navigation history, and wires children.
