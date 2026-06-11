@@ -463,6 +463,7 @@ class DiagramNavTree extends HTMLElement {
         detail: { id: item.id },
         bubbles: true, composed: true,
       }));
+      link.blur();
     });
 
     row.appendChild(link);

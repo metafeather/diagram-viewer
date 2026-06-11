@@ -103,3 +103,71 @@ Linear `blocks` chain: `i-25pi` → `i-1ulm` → `i-6br3` → `i-8g8k` → `i-8y
 - Bug 5 consolidates all chrome controls into the sidebar footer and removes the top toolbar grid row entirely.
 - Bug 6 fixes the reset by also clearing zoom / sidebar / URL state; without those resets, `loadData` re-applies the same UI state and the user sees no change.
 - The JSON dialog continues to do a full-replace of the snapshot on Apply, with `version !== 1` rejected — unchanged from the spec.
+
+## Discovered Tasks
+
+After the s-448f workflow shipped, user verification confirmed Bugs 1, 4, 5, 6 fixed but flagged Bug 2 and Bug 3 as not actually resolved. Live Playwright reproduction pinpointed the real cause for each. Recorded in sudocode under a new independent spec `s-8sat`.
+
+### Sudocode mapping (regression workflow)
+
+| TODO section          | Sudocode entity                                  |
+| --------------------- | ------------------------------------------------ |
+| Regression spec       | `s-8sat`                                         |
+| Implementation rollup | `i-44ml` (regression epic, blocked by `i-2o0x`)  |
+| Task 8                | `i-a68b`                                         |
+| Task 9                | `i-6rht`                                         |
+| Task 10 (tests, leaf) | `i-2o0x`                                         |
+
+Linear `blocks` chain: `i-a68b` → `i-6rht` → `i-2o0x` → `i-44ml`. Run `sudocode ready` to find the next unblocked task. Task 10 (`i-2o0x`) provides summary implementation feedback to `s-8sat` once closed (feedback anchor already attached).
+
+### 8. Bug 2 follow-up — blur on click in nav-tree
+
+- [x] In `src/diagram-nav-tree.js` `#createNavItem`, in the existing `link.addEventListener('click', …)` handler, add `link.blur()` after dispatching `slide-select` so click never leaves persistent DOM focus on the link
+- [x] Keep the `:focus { outline: none }` and `:focus-visible { outline: 2px solid var(--color-primary) }` rules from the original Bug 2 fix — they remain correct for Tab-keyboard accessibility
+- [x] Verify: click etcd, press ↓ — no blue outline anywhere on etcd; the new `.active` highlight (kube-controller-manager) is the only visual indicator
+- [x] Verify: Tab through nav items from a fresh page — tabbed items still show the focus ring (a11y unchanged)
+
+> Recorded as sudocode issue `i-a68b`.
+
+#### Reproduction (Playwright, real mouse + keyboard)
+
+| State | After click on `etcd` | After ArrowDown |
+|---|---|---|
+| `etcd:focus` | ✓ | ✓ (focus never moved) |
+| `etcd:focus-visible` | ✗ | **✓ (key press promoted `:focus` → `:focus-visible`)** |
+| `etcd` outline | none | `rgb(99,102,241) solid 2px` |
+| `etcd` background | active blue | hover gray (no longer `.active`) |
+| New `.active` item | etcd | kube-controller-manager (correct) |
+
+The original `:focus { outline: none }` + `:focus-visible { outline: … }` only suppresses the click-time outline; it does NOT blur the link, so focus persists and any subsequent key press promotes `:focus` to `:focus-visible`.
+
+### 9. Bug 3 follow-up — null-guard `iframeDoc.head`
+
+- [x] In `src/diagram-canvas.js` `#handleSvgDimensions`, change the style-injection guard from `if (iframeDoc && !iframeDoc.head.querySelector(...))` to `if (iframeDoc?.head && !iframeDoc.head.querySelector(...))` so a missing `head` (direct-loaded SVG document) does not throw
+- [x] Add a comment noting that browsers do not wrap a directly-loaded SVG in HTML — `documentElement` is the `<svg>` itself, with no `<head>` / `<body>`, and no body-margin issue exists in that case so skipping the injection is correct
+- [x] Verify on Kubernetes fixture `cloud-controller-manager` at zoom 50 % / 150 % / 300 %: iframe size matches SVG dimensions (877×704), PNG fills the same area via `contain`, and the red overlay rectangles sit exactly on top of their PNG counterparts
+- [x] Verify on a plain SVG slide (`etcd`): still renders correctly; no regression
+
+> Recorded as sudocode issue `i-6rht`.
+
+#### Reproduction (Playwright, `cloud-controller-manager`)
+
+```
+docRoot: "svg"            ← Chrome does NOT wrap loaded SVG in HTML
+hasHead: false            ← iframeDoc.head is null
+hasBody: false
+styleTagsInDoc: []        ← style injection didn't run (threw before append)
+iframeWidth: "100%"       ← #setDefaultDimensions() fallback fired
+iframeHeight: "100%"
+iframeFitScale: "1"       ← no fit-scale calculated
+```
+
+`null.querySelector(...)` throws TypeError → caught by outer try/catch in `#handleIframeLoad` → `#setDefaultDimensions()` sizes the iframe to 100 % × 100 % of the canvas, far larger than the SVG's 877 × 704. PNG `contain` fits to that larger box, SVG content stays at its natural 877 × 704 at top-left → "way off top left."
+
+### 10. Regression tests (keep both for robustness)
+
+- [x] Update `tests/diagram_canvas_test.go`: keep the existing body-margin-zero assertion from the original Bug 3 commit (covers any future browser that wraps direct-loaded SVG in HTML, or non-SVG-overlay content); add a new assertion that on `cloud-controller-manager` the iframe `style.width` equals the SVG's intrinsic `width` attribute (`877`) — direct proxy for alignment that catches the `setDefaultDimensions` fallback defect; assert iframe document body has zero margin OR is null (direct-loaded SVG)
+- [x] Add a Bug 2 regression test: click a nav-item, press ArrowDown, assert the previously-clicked link does NOT match `:focus-visible`
+- [x] Run `task test` — all four test files must pass
+
+> Recorded as sudocode issue `i-2o0x` (leaf — provides implementation feedback to `s-8sat` on close; feedback anchor already attached).
