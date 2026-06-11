@@ -5,6 +5,11 @@
  * Public API: loadData(data), reset()
  *
  * Attributes: manifest, base-path, sidebar, zoom, start-at
+ *
+ * Events emitted:
+ *   - slide-change: { detail: { slide, index } } — bubbles but NOT composed,
+ *     because it originates from the top-level host and does not need to cross
+ *     an additional shadow boundary.
  */
 
 import './diagram-canvas.js';
@@ -287,6 +292,9 @@ diagram-help-modal {
 class DiagramViewer extends HTMLElement {
   static observedAttributes = ['manifest', 'base-path', 'sidebar', 'zoom', 'start-at', 'bookmarkable', 'primary'];
 
+  // Shared CSSStyleSheet — adopted by every instance via adoptedStyleSheets.
+  // This sheet is READ-ONLY at runtime; do NOT call replaceSync/replace on it
+  // after initialisation, as mutations would affect all living instances.
   static #styles = new CSSStyleSheet();
   static { this.#styles.replaceSync(styles); }
 
@@ -882,36 +890,47 @@ class DiagramViewer extends HTMLElement {
     const remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const MIN_WIDTH = 10 * remToPx;
     const MAX_WIDTH = 30 * remToPx;
-    let isResizing = false;
     let startX = 0;
     let startWidth = 240;
+    let dragController = null;
+
+    const onMouseMove = (e) => {
+      const delta = e.clientX - startX;
+      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta));
+      this.#container.style.gridTemplateColumns = `${newWidth}px auto 1fr`;
+    };
+
+    const onMouseUp = () => {
+      dragController?.abort();
+      dragController = null;
+      this.#resizeHandle.classList.remove('active');
+      this.#container.classList.remove('resizing');
+      this.#canvas.setResizing(false);
+      this.#persist();
+    };
 
     this.#resizeHandle.addEventListener('mousedown', (e) => {
-      isResizing = true;
       startX = e.clientX;
       startWidth = this.#container.offsetWidth - this.#canvas.offsetWidth;
       this.#resizeHandle.classList.add('active');
       this.#container.classList.add('resizing');
       this.#canvas.setResizing(true);
       e.preventDefault();
+
+      // Attach document listeners only for the duration of the drag
+      dragController = new AbortController();
+      const dragSignal = AbortSignal.any
+        ? AbortSignal.any([dragController.signal, signal])
+        : dragController.signal;
+      document.addEventListener('mousemove', onMouseMove, { signal: dragSignal });
+      document.addEventListener('mouseup', onMouseUp, { signal: dragSignal });
     }, { signal });
 
-    document.addEventListener('mousemove', (e) => {
-      if (!isResizing) return;
-      const delta = e.clientX - startX;
-      const newWidth = Math.max(MIN_WIDTH, Math.min(MAX_WIDTH, startWidth + delta));
-      this.#container.style.gridTemplateColumns = `${newWidth}px auto 1fr`;
-    }, { signal });
-
-    document.addEventListener('mouseup', () => {
-      if (isResizing) {
-        isResizing = false;
-        this.#resizeHandle.classList.remove('active');
-        this.#container.classList.remove('resizing');
-        this.#canvas.setResizing(false);
-        this.#persist();
-      }
-    }, { signal });
+    // Clean up any active drag if the component is disconnected
+    signal.addEventListener('abort', () => {
+      dragController?.abort();
+      dragController = null;
+    });
   }
 
   async #loadManifest() {
@@ -1107,6 +1126,10 @@ class DiagramViewer extends HTMLElement {
   }
 }
 
-customElements.define('diagram-viewer', DiagramViewer);
+if (!customElements.get('diagram-viewer')) {
+  customElements.define('diagram-viewer', DiagramViewer);
+} else if (customElements.get('diagram-viewer') !== DiagramViewer) {
+  console.warn('[diagram-viewer] A different constructor is already registered under "diagram-viewer". Skipping re-definition.');
+}
 
 export { DiagramViewer };

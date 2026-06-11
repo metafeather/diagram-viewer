@@ -7,8 +7,11 @@
  *   - zoomLevel: number (default 1.5)
  *   - basePath: string
  *
- * Events emitted:
- *   - slide-navigate: { detail: { id } } when an iframe link is clicked
+ * Events emitted (all use `bubbles: true, composed: true` so they cross shadow
+ * DOM boundaries and reach the parent <diagram-viewer> host):
+ *   - slide-navigate: { detail: { id, index } } when an iframe link is clicked
+ *   - zoom-change: { detail: { zoomPercent } } after any zoom adjustment
+ *   - iframe-keydown: { detail: { key, ctrlKey, … } } keyboard from iframe
  *
  * Public API:
  *   - zoomIn(), zoomOut(), zoomReset()
@@ -87,6 +90,11 @@ class DiagramCanvas extends HTMLElement {
   }
 
   connectedCallback() {
+    // Ensure the host element is focusable so this.focus() works
+    if (!this.hasAttribute('tabindex')) {
+      this.setAttribute('tabindex', '-1');
+    }
+
     this.shadowRoot.innerHTML = `
       <div class="resize-overlay"></div>
       <div class="iframe-container">
@@ -242,23 +250,23 @@ class DiagramCanvas extends HTMLElement {
       this.#iframeLinkClickHandler = (e) => {
         const link = e.target.closest('a');
         if (!link) {
-          globalThis.focus();
-          return;
-        }
-        const href = link.getAttribute('href') || link.getAttributeNS(XLINK_NS, 'href');
-        if (!href) return;
+        this.focus({ preventScroll: true });
+      return;
+    }
+    const href = link.getAttribute('href') || link.getAttributeNS(XLINK_NS, 'href');
+    if (!href) return;
 
-        const result = this.#resolveUrlToSlide(href, this.#iframe.contentWindow?.location?.href);
-        if (result) {
-          e.preventDefault();
-          e.stopPropagation();
-          this.dispatchEvent(new CustomEvent('slide-navigate', {
-            detail: { id: result.slide.id, index: result.index },
-            bubbles: true, composed: true,
-          }));
-          return;
-        }
-        globalThis.focus();
+    const result = this.#resolveUrlToSlide(href, this.#iframe.contentWindow?.location?.href);
+    if (result) {
+      e.preventDefault();
+      e.stopPropagation();
+      this.dispatchEvent(new CustomEvent('slide-navigate', {
+        detail: { id: result.slide.id, index: result.index },
+        bubbles: true, composed: true,
+      }));
+      return;
+    }
+    this.focus({ preventScroll: true });
       };
 
       iframeDoc.addEventListener('keydown', this.#iframeKeyboardHandler);
@@ -421,6 +429,10 @@ class DiagramCanvas extends HTMLElement {
   }
 }
 
-customElements.define('diagram-canvas', DiagramCanvas);
+if (!customElements.get('diagram-canvas')) {
+  customElements.define('diagram-canvas', DiagramCanvas);
+} else if (customElements.get('diagram-canvas') !== DiagramCanvas) {
+  console.warn('[diagram-canvas] A different constructor is already registered under "diagram-canvas". Skipping re-definition.');
+}
 
 export { DiagramCanvas };

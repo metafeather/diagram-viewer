@@ -214,6 +214,10 @@ class DiagramHelpModal extends HTMLElement {
   }
 }
 
-customElements.define('diagram-help-modal', DiagramHelpModal);
+if (!customElements.get('diagram-help-modal')) {
+  customElements.define('diagram-help-modal', DiagramHelpModal);
+} else if (customElements.get('diagram-help-modal') !== DiagramHelpModal) {
+  console.warn('[diagram-help-modal] A different constructor is already registered under "diagram-help-modal". Skipping re-definition.');
+}
 
 export { DiagramHelpModal };

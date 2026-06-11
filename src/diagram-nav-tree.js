@@ -9,7 +9,8 @@
  *   - title: string
  *   - zoomPercent: number
  *
- * Events emitted:
+ * Events emitted (all use `bubbles: true, composed: true` so they cross shadow
+ * DOM boundaries and reach the parent <diagram-viewer> host):
  *   - slide-select: { detail: { id } } when a nav item is clicked
  *   - sidebar-collapse: when collapse button clicked
  *   - zoom-in / zoom-out / zoom-reset: zoom button clicks
@@ -509,6 +510,10 @@ class DiagramNavTree extends HTMLElement {
   }
 }
 
-customElements.define('diagram-nav-tree', DiagramNavTree);
+if (!customElements.get('diagram-nav-tree')) {
+  customElements.define('diagram-nav-tree', DiagramNavTree);
+} else if (customElements.get('diagram-nav-tree') !== DiagramNavTree) {
+  console.warn('[diagram-nav-tree] A different constructor is already registered under "diagram-nav-tree". Skipping re-definition.');
+}
 
 export { DiagramNavTree };
