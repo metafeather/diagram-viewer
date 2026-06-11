@@ -245,3 +245,56 @@ func TestCanvas_PNGWithOverlay(t *testing.T) {
 		t.Fatal("PNG-with-overlay: iframe src should be the overlay SVG")
 	}
 }
+
+func TestCanvas_IframeBodyZeroMargin(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+	loadFixture(t, page, "examples/kubernetes/manifest.json")
+
+	// Navigate to cloud-controller-manager and check iframe body margin
+	result, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const sr = viewer.shadowRoot;
+		const tree = sr.querySelector('diagram-nav-tree');
+		const items = tree.shadowRoot.querySelectorAll('.nav-item');
+		for (const item of items) {
+			if (item.dataset.id === 'cloud-controller-manager') {
+				item.click();
+				break;
+			}
+		}
+		return new Promise(resolve => {
+			setTimeout(() => {
+				const canvas = sr.querySelector('diagram-canvas');
+				const iframe = canvas.shadowRoot.querySelector('iframe');
+				try {
+					const doc = iframe.contentDocument;
+					if (!doc || !doc.body) {
+						resolve({skip: true, reason: 'cannot access iframe document'});
+						return;
+					}
+					const style = doc.defaultView.getComputedStyle(doc.body);
+					resolve({
+						margin: style.margin,
+						marginTop: style.marginTop,
+						marginLeft: style.marginLeft,
+					});
+				} catch(e) {
+					resolve({skip: true, reason: e.message});
+				}
+			}, 1500);
+		});
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if m["skip"] == true {
+		t.Skipf("iframe not accessible: %v", m["reason"])
+	}
+	if m["marginTop"].(string) != "0px" || m["marginLeft"].(string) != "0px" {
+		t.Fatalf("regression: iframe body should have zero margin for overlay alignment, got margin-top=%s margin-left=%s",
+			m["marginTop"], m["marginLeft"])
+	}
+}

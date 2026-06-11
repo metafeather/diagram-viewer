@@ -65,19 +65,27 @@ func TestViewer_JSONDialogExportRoundTrips(t *testing.T) {
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
 
-	// Open JSON dialog
+	// Open JSON dialog via sidebar-footer button
 	_, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
-		viewer.shadowRoot.querySelector('.toolbar-json').click();
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		tree.shadowRoot.querySelector('.json-btn').click();
 	}`)
 	if err != nil {
 		t.Fatalf("could not open JSON dialog: %v", err)
 	}
 
+	// Verify backdrop is open
+	_, _ = page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const backdrop = viewer.shadowRoot.querySelector('.json-dialog-backdrop');
+		if (!backdrop.classList.contains('open')) throw new Error('backdrop not open');
+	}`)
+
 	// Get textarea value (export)
 	exported, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
-		return viewer.shadowRoot.querySelector('.json-dialog textarea').value;
+		return viewer.shadowRoot.querySelector('.json-dialog-backdrop textarea').value;
 	}`)
 	if err != nil {
 		t.Fatalf("could not read export: %v", err)
@@ -103,15 +111,15 @@ func TestViewer_JSONDialogImportReplaces(t *testing.T) {
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
-		// Open dialog
-		sr.querySelector('.toolbar-json').click();
-		const ta = sr.querySelector('.json-dialog textarea');
+		// Open dialog via nav-tree footer button
+		const tree = sr.querySelector('diagram-nav-tree');
+		tree.shadowRoot.querySelector('.json-btn').click();
+		const ta = sr.querySelector('.json-dialog-backdrop textarea');
 		const snap = JSON.parse(ta.value);
 		snap.manifest.name = "Modified";
 		ta.value = JSON.stringify(snap);
 		sr.querySelector('.json-apply').click();
 		// Check title updated
-		const tree = sr.querySelector('diagram-nav-tree');
 		const title = tree.shadowRoot.querySelector('.title').textContent;
 		return title;
 	}`)
@@ -132,8 +140,9 @@ func TestViewer_JSONDialogImportErrorKeepsExisting(t *testing.T) {
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
-		sr.querySelector('.toolbar-json').click();
-		const ta = sr.querySelector('.json-dialog textarea');
+		const tree = sr.querySelector('diagram-nav-tree');
+		tree.shadowRoot.querySelector('.json-btn').click();
+		const ta = sr.querySelector('.json-dialog-backdrop textarea');
 		const originalSnap = ta.value;
 		// Put invalid JSON
 		ta.value = "not valid json {{{";
@@ -142,7 +151,6 @@ func TestViewer_JSONDialogImportErrorKeepsExisting(t *testing.T) {
 		const errEl = sr.querySelector('.json-dialog-error');
 		const hasError = errEl.textContent.length > 0;
 		// Check title unchanged (dialog still open, snapshot not replaced)
-		const tree = sr.querySelector('diagram-nav-tree');
 		const title = tree.shadowRoot.querySelector('.title').textContent;
 		return {hasError, title};
 	}`)
@@ -167,7 +175,8 @@ func TestViewer_ResetClearsAndReapplies(t *testing.T) {
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
 		const sr = viewer.shadowRoot;
-		sr.querySelector('.toolbar-reset').click();
+		const tree = sr.querySelector('diagram-nav-tree');
+		tree.shadowRoot.querySelector('.reset-btn').click();
 		// Wait for persist debounce (250ms + buffer)
 		return new Promise(resolve => {
 			setTimeout(() => {
@@ -182,6 +191,54 @@ func TestViewer_ResetClearsAndReapplies(t *testing.T) {
 	// After reset + re-apply from source, localStorage is repopulated
 	if result != true {
 		t.Fatal("expected localStorage to be repopulated after reset")
+	}
+}
+
+func TestViewer_ResetClearsZoomSidebarHashSlide(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+	loadFixture(t, page, "examples/kubernetes/manifest.json")
+
+	// Change zoom and navigate to a non-overview slide
+	_, _ = page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const sr = viewer.shadowRoot;
+		const canvas = sr.querySelector('diagram-canvas');
+		canvas.zoomIn();
+		const tree = sr.querySelector('diagram-nav-tree');
+		const items = tree.shadowRoot.querySelectorAll('.nav-item');
+		if (items.length > 1) items[1].click();
+	}`)
+	page.WaitForTimeout(300)
+
+	// Now click Reset
+	result, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const sr = viewer.shadowRoot;
+		const tree = sr.querySelector('diagram-nav-tree');
+		tree.shadowRoot.querySelector('.reset-btn').click();
+		return new Promise(resolve => {
+			setTimeout(() => {
+				const zoomLevel = tree.shadowRoot.querySelector('.zoom-level').textContent;
+				const hash = location.hash;
+				const collapsed = sr.querySelector('.container').classList.contains('sidebar-collapsed');
+				resolve({zoomLevel, hash, sidebarCollapsed: collapsed});
+			}, 500);
+		});
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if m["zoomLevel"].(string) != "150%" {
+		t.Fatalf("expected zoom reset to 150%%, got %s", m["zoomLevel"])
+	}
+	if m["hash"].(string) != "#overview" && m["hash"].(string) != "" {
+		t.Fatalf("expected hash to reset to overview, got %s", m["hash"])
+	}
+	if m["sidebarCollapsed"] == true {
+		t.Fatal("sidebar should not be collapsed after reset")
 	}
 }
 

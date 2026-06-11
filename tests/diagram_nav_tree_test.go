@@ -166,3 +166,42 @@ func TestNavTree_KeyboardNavigation(t *testing.T) {
 		t.Fatal("End did not navigate to last slide")
 	}
 }
+
+func TestNavTree_ActiveChildParentNotActive(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+	loadFixture(t, page, "examples/kubernetes/manifest.json")
+
+	// Click a child item (not the first/overview) and verify its parent nav-group doesn't have .active
+	result, err := page.Evaluate(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const sr = tree.shadowRoot;
+		// Find a child item inside a nav-group (not the root overview)
+		const childItems = sr.querySelectorAll('.nav-group .nav-children .nav-item');
+		if (childItems.length === 0) return {skip: true};
+		const child = childItems[0];
+		child.click();
+		// Check child has active, parent nav-item does NOT
+		const parentGroup = child.closest('.nav-children').closest('.nav-group');
+		const parentItem = parentGroup ? parentGroup.querySelector(':scope > .nav-item') : null;
+		return {
+			childActive: child.classList.contains('active'),
+			parentActive: parentItem ? parentItem.classList.contains('active') : false,
+		};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if m["skip"] == true {
+		t.Skip("no child items found in fixture")
+	}
+	if m["childActive"] != true {
+		t.Fatal("child item should have active class")
+	}
+	if m["parentActive"] == true {
+		t.Fatal("regression: parent nav-item should NOT carry active class when child is active")
+	}
+}
