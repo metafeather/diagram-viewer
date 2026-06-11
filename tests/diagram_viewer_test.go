@@ -177,8 +177,9 @@ func TestViewer_ResetClearsAndReapplies(t *testing.T) {
 		// Wait for persist debounce (250ms + buffer)
 		return new Promise(resolve => {
 			setTimeout(() => {
-				const stored = localStorage.getItem('diagramViewer.v1');
-				resolve(stored !== null);
+		const key = 'diagramViewer.v1:' + document.querySelector('diagram-viewer').dataset.instanceId;
+			const stored = localStorage.getItem(key);
+			resolve(stored !== null);
 			}, 400);
 		});
 	}`)
@@ -259,7 +260,8 @@ func TestViewer_LocalStoragePersistenceAcrossReload(t *testing.T) {
 
 	// Get persisted state before reload
 	before, err := page.Evaluate(`() => {
-		const raw = localStorage.getItem('diagramViewer.v1');
+		const key = 'diagramViewer.v1:' + document.querySelector('diagram-viewer').dataset.instanceId;
+		const raw = localStorage.getItem(key);
 		if (!raw) return null;
 		return JSON.parse(raw).ui;
 	}`)
@@ -293,7 +295,8 @@ func TestViewer_LocalStoragePersistenceAcrossReload(t *testing.T) {
 
 	// Verify zoom was restored
 	after, err := page.Evaluate(`() => {
-		const raw = localStorage.getItem('diagramViewer.v1');
+		const key = 'diagramViewer.v1:' + document.querySelector('diagram-viewer').dataset.instanceId;
+		const raw = localStorage.getItem(key);
 		if (!raw) return null;
 		return JSON.parse(raw).ui.zoomPercent;
 	}`)
