@@ -2,7 +2,7 @@
  * <diagram-viewer> — parent custom element that owns state, loads manifest,
  * builds flat slide list, owns navigation history, and wires children.
  *
- * Public API: loadData(data), reset()
+ * Public API: loadData(data), reset(), loadFromUrl(url), openJsonDialog()
  *
  * Attributes: manifest, base-path, sidebar, zoom, start-at
  *
@@ -534,6 +534,56 @@ class DiagramViewer extends HTMLElement {
     this.#persist();
   }
 
+  /**
+   * Load a manifest from a URL. Resolves relative URLs against document.baseURI.
+   * Clears localStorage for this instance, derives base-path from the URL,
+   * updates attributes, fetches and parses JSON, then calls loadData().
+   * @param {string} url
+   */
+  async loadFromUrl(url) {
+    const resolved = new URL(url, document.baseURI).href;
+
+    // Clear persisted state for this instance
+    try { localStorage.removeItem(this.#storageKey()); } catch { /* noop */ }
+
+    // Derive base-path: strip trailing path segment (filename) unless URL ends with /
+    let basePath;
+    if (resolved.endsWith('/')) {
+      basePath = resolved;
+    } else {
+      basePath = resolved.slice(0, resolved.lastIndexOf('/'));
+    }
+
+    // Update attributes for reflection
+    this.setAttribute('base-path', basePath);
+    this.setAttribute('manifest', resolved);
+    this.#basePath = basePath;
+
+    try {
+      const response = await fetch(resolved);
+      if (!response.ok) throw new Error(`Failed to fetch manifest: ${response.status}`);
+      const data = await response.json();
+      this.loadData(data);
+    } catch (err) {
+      console.error('Failed to load manifest:', err);
+      this.#showManifestError(resolved, err);
+    }
+  }
+
+  /**
+   * Open the JSON snapshot dialog programmatically.
+   */
+  openJsonDialog() {
+    const backdrop = this.shadowRoot.querySelector('.json-dialog-backdrop');
+    const textarea = backdrop.querySelector('textarea');
+    const errorEl = this.shadowRoot.querySelector('.json-dialog-error');
+    const copiedEl = this.shadowRoot.querySelector('.json-dialog-copied');
+    errorEl.textContent = '';
+    copiedEl.textContent = '';
+    textarea.value = JSON.stringify(this.#getSnapshot(), null, 2);
+    backdrop.classList.add('open');
+  }
+
   reset() {
     // Clear persisted snapshot
     try { localStorage.removeItem(this.#storageKey()); } catch { /* noop */ }
@@ -762,14 +812,7 @@ class DiagramViewer extends HTMLElement {
 
     // Toolbar + dialog
     this.#navTree.addEventListener('json-open', () => {
-      const backdrop = this.shadowRoot.querySelector('.json-dialog-backdrop');
-      const textarea = backdrop.querySelector('textarea');
-      const errorEl = this.shadowRoot.querySelector('.json-dialog-error');
-      const copiedEl = this.shadowRoot.querySelector('.json-dialog-copied');
-      errorEl.textContent = '';
-      copiedEl.textContent = '';
-      textarea.value = JSON.stringify(this.#getSnapshot(), null, 2);
-      backdrop.classList.add('open');
+      this.openJsonDialog();
     }, { signal });
 
     this.#navTree.addEventListener('reset', () => {
