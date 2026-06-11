@@ -1,0 +1,43 @@
+Pod
+
+ContainerLifeCycle: Container lifecycle {
+  style.fill: transparent
+  style.stroke: transparent
+  style.underline: true
+
+  Container: {
+    link: _._.layers.Containers
+    waiting: {
+      shape: circle
+      tooltip: while completing startup
+    }
+    running: {
+      shape: circle
+      tooltip: execute without issues
+    }
+    terminated: {
+      style.fill: pink
+      shape: circle
+      tooltip: either ran to completion or failed
+    }
+
+    RestartPolicy: "" {
+      shape: page
+      style.fill: white
+      content: |md
+        Restart Policy
+          - Always
+          - Never
+          - OnFailure
+      |
+    }
+
+    Restart: restart depends \n on policy {
+      shape: diamond
+    }
+
+    waiting -> running -> terminated -> RestartPolicy -> Restart -> waiting
+  }
+}
+
+Pod -> ContainerLifeCycle: commands

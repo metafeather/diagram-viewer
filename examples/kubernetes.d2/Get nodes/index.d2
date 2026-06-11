@@ -1,0 +1,112 @@
+classes: @../classes
+
+Header: Kubernetes architecture {
+  icon: https://icons.terrastruct.com/azure/_Companies/Kubernetes.svg
+  shape: image
+  height: 30
+  width: 40
+  label.near: outside-right-center
+}
+
+ControlPlane: Control Plane {
+  link: _.layers.Control Plane
+  class: control-plane
+
+  etcd: {
+    class: etcd
+    style.opacity: 0.1
+  }
+  kube-api-server.class: kube-api-server
+  kube-api-server -> etcd: {
+    style.opacity: 0.1
+  }
+  "Authenticate and \n validates request": {
+    style: {
+      font-size: 8
+      stroke-width: 1
+      fill: white
+      opacity: 0
+    }
+    near: ControlPlane.kube-api-server
+  }
+}
+
+User.class: user
+
+table: "" {
+  grid-rows: 3
+  grid-gap: 0
+  **.style.font-size: 10
+  **.style.opacity: 0
+  style.opacity: 0
+  **.width: 50
+  **.height: 20
+  near: User
+
+  row1: "" {
+    grid-columns: 5
+    grid-gap: 0
+    Names
+    Status
+    Roles
+    Age
+    Version
+  }
+  row2: "" {
+    grid-columns: 5
+    grid-gap: 0
+    masterName: master
+    ready
+    masterRole: master
+    50m
+    'v1.2'
+  }
+  row3: "" {
+    grid-columns: 5
+    grid-gap: 0
+    masterName: node01
+    ready
+    masterRole: ""
+    50m
+    'v1.2'
+  }
+}
+
+ControlPlane.kube-api-server -> User: {
+  style.opacity: 0
+}
+User -> ControlPlane.kube-api-server: kubectl get nodes
+
+scenarios: {
+  1: {
+    ControlPlane: {
+      (kube-api-server -> etcd)[0]: Authenticate and \n validates request {
+        style.opacity: 1
+        style.font-size: 8
+      }
+    }
+  }
+  2: {
+    ControlPlane: {
+      (kube-api-server -> etcd)[0]: Get nodes from etcd {
+        style.opacity: 1
+        style.font-size: 8
+      }
+      etcd.style.opacity: 1
+    }
+  }
+  3: {
+    ControlPlane: {
+      (kube-api-server -> etcd)[0]: {
+        style.opacity: 0.1
+      }
+      etcd.style.opacity: 0.1
+    }
+    (ControlPlane.kube-api-server -> User)[0]: {
+      style.opacity: 1
+    }
+    table: {
+      **.style.opacity: 1
+    }
+  }
+}

@@ -1,0 +1,104 @@
+classes: @../classes
+direction: right
+Header: Kubernetes architecture {
+  icon: https://icons.terrastruct.com/azure/_Companies/Kubernetes.svg
+  shape: image
+  label.near: outside-right-center
+  width: 50
+  height: 50
+}
+
+ControlPlane: Control Plane {
+  link: _.layers.Control Plane
+  class: control-plane
+
+  etcd: {
+    class: etcd
+    style.opacity: 0.1
+  }
+  kube-api-server.class: kube-api-server
+  kube-scheduler: {
+    class: kube-scheduler
+    style.opacity: 0.1
+  }
+  kube-scheduler <-> kube-api-server: {
+    style.opacity: 0.1
+  }
+  kube-api-server -> etcd: persistent to etcd {
+    style.opacity: 0
+    style.font-size: 10
+  }
+  etcd -> kube-api-server: {
+    style.opacity: 0.1
+  }
+}
+
+User.class: user
+
+User -> ControlPlane.kube-api-server: curl -x POST /api/.../pods
+
+ControlPlane.kube-api-server -> User: Pod created! {
+  style.opacity: 0
+}
+
+Nodes: "" {
+  grid-columns: 2
+  grid-rows: 2
+  near: User
+  style.opacity: 0
+  **.style.opacity: 0
+  Node1: Node 1 {
+    link: _.layers.Nodes
+  }
+  Node2: Node 2 {
+    # tooltip: This node is chosen
+    link: _.layers.Nodes
+  }
+  Node3: Node 3 {link: _.layers.Nodes}
+  Node4: Node 4 {link: _.layers.Nodes}
+}
+
+scenarios: {
+  1: {
+    ControlPlane: {
+      (etcd -> kube-api-server)[0]: creates the pod objects {
+        style.opacity: 1
+        style.font-size: 10
+      }
+    }
+    (User -> ControlPlane.kube-api-server)[0].style.opacity: 0.1
+    User.style.opacity: 0.1
+  }
+  2: {
+    ControlPlane: {
+      etcd.style.opacity: 1
+      (etcd -> kube-api-server)[0]: {
+        style.opacity: 0
+      }
+      (kube-api-server -> etcd)[0]: {
+        style.opacity: 1
+      }
+    }
+    (User -> ControlPlane.kube-api-server)[0].style.opacity: 0.1
+    User.style.opacity: 0.1
+  }
+  3: {
+    (User -> ControlPlane.kube-api-server)[0].style.opacity: 0.1
+    User.style.opacity: 0.1
+    (ControlPlane.kube-api-server -> User)[0].style.opacity: 1
+  }
+  4: {
+    ControlPlane: {
+      (kube-scheduler <-> kube-api-server)[0]: scheduler sees that a pod \nexists without a node, and \nfinds a node to assign it to, \nand talks kube-api-server {
+        style.opacity: 1
+        style.font-size: 9
+      }
+      kube-scheduler.style.opacity: 1
+    }
+    Nodes: {
+      style.opacity: 1
+      **.style.opacity: 0.3
+      Node2.style.opacity: 1
+    }
+  }
+}

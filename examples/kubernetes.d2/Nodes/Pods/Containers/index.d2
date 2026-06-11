@@ -1,0 +1,83 @@
+classes: {
+  Kernel: {
+    icon: https://icons.terrastruct.com/dev/linux.svg
+    shape: image
+    label.near: outside-top-center
+    height: 50
+  }
+}
+
+header: What are containers? {
+  icon: https://icons.terrastruct.com/dev/docker.svg
+  label.near: outside-right-center
+  shape: image
+  style.font-size: 40
+  height: 90
+}
+
+Hardware1: Hardware {
+  style.3d: true
+
+  HostOS: Host OS {
+    style.3d: true
+
+    box: "" {
+      Kernel.class: Kernel
+      Program A
+    }
+  }
+
+  GuestOS: Guest OS {
+    style.3d: true
+
+    box: "" {
+      Kernel.class: Kernel
+      Program B
+    }
+  }
+}
+
+Hardware2: Hardware {
+  style.3d: true
+
+  HostOS: Host OS {
+    style.3d: true
+
+    box: "" {
+      Kernel.class: Kernel
+
+      Container1: Container {
+        Program A
+      }
+    }
+
+    box: "" {
+      Kernel.class: Kernel
+
+      Container2: Container {
+        Program B
+      }
+    }
+  }
+}
+Hardware1 -> Hardware2
+
+Visualization: |md
+  ## Visualization 
+  To isolate 2 programs, visualization required \
+  the overhead of two separate OS and kernel
+| {
+  near: Hardware1
+}
+
+Container: |md
+  ## Containers 
+  Containers run them as programs on the same OS while \
+  maintaining the security and isolation of multiple
+| {
+  near: Hardware2
+}
+
+layers: {
+  ContainerLifeCycle: {...@ContainerLifeCycle}
+}

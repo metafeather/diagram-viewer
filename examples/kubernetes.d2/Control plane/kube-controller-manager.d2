@@ -1,0 +1,18 @@
+classes: @../classes
+direction: right
+
+kube-controller-manager: {
+  class: kube-controller-manager
+  ...@../components.kube-controller-manager
+}
+
+Server: {
+  "Single\nbinary\ndaemon".style.fill: white
+  style.3d: true
+}
+
+kube-api-server.class: kube-api-server
+
+Server <-> kube-api-server: Watch for changes to cluster
+Server <-> kube-api-server: Move current state to desired state
+kube-controller-manager -> Server: Compile

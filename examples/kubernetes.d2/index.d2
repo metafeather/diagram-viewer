@@ -1,0 +1,97 @@
+classes: @classes
+
+KubernetesArchitecture: Kubernetes Architecture {
+  shape: image
+  icon: https://icons.terrastruct.com/azure/_Companies/Kubernetes.svg
+  label.near: outside-right-center
+  height: 50
+  style: {
+    underline: true
+    font-size: 40
+  }
+}
+
+ControlPlane: Control plane {
+  style.underline: true
+  class: control-plane
+
+  KubeController: Kube-controller-manager {
+    class: kube-controller-manager
+    ...@components.kube-controller-manager
+  }
+
+  etcd: {
+    class: etcd
+  }
+
+  cloud-controller-manager: {
+    class: cloud-controller-manager
+    ...@components.cloud-controller-manager
+  }
+
+  kubeScheduler: {
+    class: kube-scheduler
+  }
+
+  kube-api-server: {
+    class: kube-api-server
+  }
+
+  KubeController <-> kube-api-server
+  etcd -> kube-api-server
+  cloud-controller-manager -> kube-api-server
+  kubeScheduler -> kube-api-server
+  link: layers.Control Plane
+}
+
+Nodes: {
+  style.underline: true
+
+  NodesContainer: "" {
+    kublet
+    kub-proxy
+    containerRunTime: Container \n runtime
+    style.multiple: true
+  }
+
+  workNode: worker node {
+    style: {
+      underline: true
+      fill: transparent
+      stroke: transparent
+    }
+    width: 250
+  }
+  link: layers.Nodes
+}
+ControlPlane.kube-api-server -> Nodes.NodesContainer.kublet
+ControlPlane.kube-api-server -> Nodes.NodesContainer.kub-proxy
+
+CloudProvider: Cloud provider(s) {
+  style.underline: true
+  shape: cloud
+  grid-columns: 3
+
+  AWS: "" {
+    icon: https://partner.zoom.us/wp-content/uploads/2022/12/2022_Zoom-AWS_Lockup_RGB-1-e1672857797889-1024x760.png
+    shape: image
+  }
+
+  GoogleCloud: "" {
+    icon: https://assets.datamation.com/uploads/2021/08/Google-Cloud-Logo.png
+    shape: image
+  }
+
+  Azure: "" {
+    icon: https://arunpotti.com/wp-content/uploads/2021/12/microsoft_azure.svg_.png
+    shape: image
+  }
+}
+ControlPlane.cloud-controller-manager -> CloudProvider
+
+layers: {
+  Nodes: {...@Nodes/index}
+  Control Plane: {...@Control plane/index}
+  Get nodes: {...@Get nodes/index}
+  Create pod: {...@Create pod/index}
+}

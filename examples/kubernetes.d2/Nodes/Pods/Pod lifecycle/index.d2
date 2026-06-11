@@ -1,0 +1,124 @@
+direction: down
+
+header: Pod lifecycle {
+  style: {
+    font-size: 40
+    underline: true
+    fill: transparent
+    stroke: transparent
+  }
+}
+
+Pod: Pod {
+  style: {
+    fill: transparent
+    stroke: transparent
+  }
+  content: PodStatus {
+    pending: {
+      shape: circle
+    }
+    container1: container
+    container2: container
+
+    pending -- container1: start containers
+    pending -- container2: start containers
+
+    running: {
+      shape: circle
+      # tooltip: all container starters, at least one still running
+      style.opacity: 0
+    }
+    pending -> running: {
+      style.opacity: 0
+    }
+
+    succeeded: {
+      style.opacity: 0
+      shape: circle
+      # tooltip: all containers ran successfully, no restart needed
+    }
+    failed: {
+      style.opacity: 0
+      shape: circle
+      # tooltip: all containers have terminated, but at least one terminated in failure
+    }
+    unknown: {
+      style.opacity: 0
+      shape: circle
+      # tooltip: for some reason, status can't be obtained. usually communication cut
+    }
+    running -> succeeded: {
+      style.opacity: 0
+    }
+    running -> failed: {
+      style.opacity: 0
+    }
+    running -> unknown: {
+      style.opacity: 0
+    }
+  }
+}
+
+Kubelet
+Kubelet -> Pod.Content.pending: scheduled
+
+scenarios: {
+  1: {
+    Pod.content: {
+      (pending -- container1)[0].style.opacity: 0.1
+      (pending -- container2)[0].style.opacity: 0.1
+      container1.style.opacity: 0.1
+      container2.style.opacity: 0.1
+      running.style.opacity: 1
+      (pending -> running)[0]: {
+        style.opacity: 1
+      }
+      succeeded.style.opacity: 0
+      failed.style.opacity: 0
+      unknown.style.opacity: 0
+      (running -> succeeded)[0]: {
+        style.opacity: 0
+      }
+      (running -> failed)[0]: {
+        style.opacity: 0
+      }
+      (running -> unknown)[0]: {
+        style.opacity: 0
+      }
+    }
+
+    Kubelet.style.opacity: 0.1
+    (Kubelet -> Pod.content.pending)[0].style: {
+      opacity: 0.1
+    }
+  }
+
+  2: {
+    Pod.content: {
+      (pending -- container1)[0].style.opacity: 0.1
+      (pending -- container2)[0].style.opacity: 0.1
+      container1.style.opacity: 0.1
+      container2.style.opacity: 0.1
+      (pending -> running)[0].style.opacity: 1
+      running.style.opacity: 1
+      succeeded.style.opacity: 1
+      failed.style.opacity: 1
+      unknown.style.opacity: 1
+      (running -> succeeded)[0]: {
+        style.opacity: 1
+      }
+      (running -> failed)[0]: {
+        style.opacity: 1
+      }
+      (running -> unknown)[0]: {
+        style.opacity: 1
+      }
+    }
+
+    Kubelet.style.opacity: 0.1
+    (Kubelet -> Pod.content.pending)[0].style: {
+      opacity: 0.1
+    }
+  }
+}

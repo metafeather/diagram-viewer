@@ -1,0 +1,75 @@
+classes: @../../classes
+
+explainer: What are pods? {
+  text: Pods are ephemeral, disposable entities that hold one or more containers that work together to run a single application/service {
+    style.stroke: transparent
+    style.fill: transparent
+  }
+  style: {
+    stroke: transparent
+    fill: transparent
+  }
+  near: top-center
+}
+
+pod: Pod {
+  grid-rows: 3
+  containers: "" {
+    grid-columns: 3
+    container1: Container {link: layers.Containers}
+    container2: Container {link: layers.Containers}
+    container3: Container {link: layers.Containers}
+    container1 <-> container2
+    container2 <-> container3
+  }
+
+  expainer: Colocated containers that typically work \n together to compose a single application {
+    style.stroke: transparent
+  }
+  podEntities: Pod {
+    grid-columns: 4
+    Disk: Disk {
+      icon: https://icons.terrastruct.com/azure/Compute%20Service%20Color/Disks.svg
+    }
+    Network: {
+      icon: https://icons.terrastruct.com/azure/Networking%20Service%20Color/Azure%20Firewall.svg
+    }
+    CPU: {
+      icon: https://icons.terrastruct.com/tech/014-cpu.svg
+    }
+
+    etc: ...
+  }
+}
+
+kubelet
+
+'Control plane'.class: control-plane
+
+templateExample: Each pod is based on some user-defined template {
+  style.fill: white
+  example: |text
+    apiVersion: back/v1
+    kind: Job
+    metadata:
+      name: hello
+    spec: 
+      template: 
+        # This is the pod template
+        spec: 
+          containers
+          - name: hello
+          image: busybox
+          command: ['sh', '-c', 'echo', 'Hello, Kubernetes!' && 'sleep 3600']
+        restartPolicy: onFailure 
+      # The pod template ends here
+  |
+}
+kubelet -> pod
+Control plane -> kubelet
+templateExample -> pod
+
+layers: {
+  Containers: {...@Containers/index}
+  PodLifecycle: {...@Pod lifecycle/index}
+}

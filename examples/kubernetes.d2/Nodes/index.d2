@@ -1,0 +1,93 @@
+direction: up
+classes: @../classes
+
+Explainer: |md
+  ## **What are nodes?**
+  A node is a machine that is managed by \
+  Kubernetes to run your application by \
+  placing within containers pods
+| {
+  style.font-size: 26
+  width: 1000
+}
+
+Server: The machine can be either \nvirtual or physical {
+  icon: https://icons.terrastruct.com/essentials/112-server.svg
+  shape: image
+}
+
+Node: {
+  Status: {
+    example: |sh
+      {
+          "addresses": ...,
+          "conditions": ...,
+          "capacity": ...,
+          "info": ...,
+      }
+    |
+  }
+
+  kubelet
+
+  grpc1: grpc {
+    shape: diamond
+  }
+
+  Pod: {
+    style.underline: true
+    Container: {
+      link: layers.Pods.layers.Containers
+    }
+    link: layers.Pods
+  }
+
+  grpc2: grpc {
+    shape: diamond
+  }
+
+  containerRuntime: Container Runtime
+
+  kube-proxy
+  Status -> kubelet
+  grpc1 -> kubelet
+  grpc1 -> containerRuntime
+  containerRuntime -> grpc2
+  grpc2 -> Pod.Container
+  Pod -> kube-proxy
+}
+
+ControlPlane: {
+  label: Kubernetes controls each \n node by sending commands \n and receiving information \n back from the control \n plane to the kubelet, \nand receiving information back \n
+  innerLabel: Control Plane {
+    style: {
+      stroke: transparent
+      fill: transparent
+    }
+  }
+  class: control-plane
+}
+
+OutterContainer: {
+  label: ""
+  cloud: {
+    label: ""
+    shape: cloud
+  }
+  node: {style.multiple: true}
+  explainer: {
+    label: kube-proxy holds network rules for nodes \n to communicate with each other \n inside the cluster and with \n other services outside the cluster
+    style.fill: transparent
+    style.stroke: transparent
+  }
+  style.fill: transparent
+  style.stroke: transparent
+}
+
+Node -- Server: {style.stroke-dash: 3}
+ControlPlane <-> Node.kubelet
+Node.kube-proxy <-> OutterContainer.explainer
+
+layers: {
+  Pods: {...@Pods/index}
+}

@@ -11,8 +11,22 @@ import './diagram-canvas.js';
 import './diagram-nav-tree.js';
 import './diagram-help-modal.js';
 
-const STORAGE_KEY = 'diagramViewer.v1';
+const STORAGE_PREFIX = 'diagramViewer.v1';
 const PERSIST_DELAY = 250;
+
+/**
+ * FNV-1a 32-bit hash → 8-char hex string.
+ * @param {string} str
+ * @returns {string}
+ */
+function fnv1a32(str) {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193);
+  }
+  return (h >>> 0).toString(16).padStart(8, '0');
+}
 
 const styles = `
 :host {
@@ -272,6 +286,7 @@ class DiagramViewer extends HTMLElement {
   static { this.#styles.replaceSync(styles); }
 
   // State
+  #instanceId = '';
   #manifest = null;
   #basePath = '';
   #flatSlides = [];
@@ -301,6 +316,21 @@ class DiagramViewer extends HTMLElement {
 
   connectedCallback() {
     this.#abortController = new AbortController();
+
+    // Resolve stable per-instance identity
+    if (this.id) {
+      this.#instanceId = this.id;
+    } else {
+      const manifest = this.getAttribute('manifest') ?? '';
+      const basePath = this.getAttribute('base-path') ?? '';
+      if (manifest || basePath) {
+        this.#instanceId = fnv1a32(manifest + basePath);
+      } else {
+        this.#instanceId = crypto.randomUUID();
+      }
+    }
+    this.dataset.instanceId = this.#instanceId;
+
     this.#render();
     this.#initElements();
     this.#applyInitialAttributes();
@@ -310,6 +340,10 @@ class DiagramViewer extends HTMLElement {
     if (!this.#loadFromStorage()) {
       this.#loadManifest();
     }
+  }
+
+  #storageKey() {
+    return `${STORAGE_PREFIX}:${this.#instanceId}`;
   }
 
   disconnectedCallback() {
@@ -368,7 +402,7 @@ class DiagramViewer extends HTMLElement {
     // ── Preserve UI state from existing snapshot if present ───────────────
     let preservedUi = null;
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(this.#storageKey());
       if (raw) {
         const snapshot = JSON.parse(raw);
         if (snapshot.version === 1 && snapshot.ui) {
@@ -415,7 +449,7 @@ class DiagramViewer extends HTMLElement {
 
   reset() {
     // Clear persisted snapshot
-    try { localStorage.removeItem(STORAGE_KEY); } catch { /* noop */ }
+    try { localStorage.removeItem(this.#storageKey()); } catch { /* noop */ }
 
     this.#manifest = null;
     this.#flatSlides = [];
@@ -452,7 +486,7 @@ class DiagramViewer extends HTMLElement {
    */
   #loadFromStorage() {
     try {
-      const raw = localStorage.getItem(STORAGE_KEY);
+      const raw = localStorage.getItem(this.#storageKey());
       if (!raw) return false;
 
       const snapshot = JSON.parse(raw);
@@ -526,7 +560,7 @@ class DiagramViewer extends HTMLElement {
             sidebarWidthPx,
           },
         };
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
+        localStorage.setItem(this.#storageKey(), JSON.stringify(snapshot));
       } catch { /* quota exceeded or private browsing — silently ignore */ }
     }, PERSIST_DELAY);
   }
@@ -697,7 +731,7 @@ class DiagramViewer extends HTMLElement {
         return;
       }
       // Full replace
-      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch { /* noop */ }
+      try { localStorage.setItem(this.#storageKey(), JSON.stringify(parsed)); } catch { /* noop */ }
       this.#applySnapshot(parsed);
       backdrop.classList.remove('open');
     }, { signal });

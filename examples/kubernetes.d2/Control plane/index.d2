@@ -1,0 +1,58 @@
+classes: @../classes
+direction: down
+
+Header: |md
+  # What is a control plane? 
+  The control plane makes global decisions \
+  for the cluster, and detects and responds to events.
+|
+
+Control plane: {
+  class: control-plane
+  kube-api-server: {
+    class: kube-api-server
+    tooltip: the 'frontend' of the control plane
+  }
+
+  kube-controller-manager: {
+    class: kube-controller-manager
+    tooltip: Runs controll processes
+    "Node\ncontroller".tooltip: are the nodes down?
+    "Replication\ncontroller".tooltip: "is the right # of pods running?"
+    "Endpoints\ncontroller".tooltip: what are the pod endpoints to make requests to?
+    "Service \n account & \ntoken \ncontroller".tooltip: what accounts should have permissions to do XYZ?
+    link: layers.kube-controller-manager
+  }
+
+  Etcd: {
+    class: etcd
+    tooltip: cluster data stored in a persistent key-value store
+    link: layers.etcd
+  }
+
+  cloud-controller-manager: {
+    class: cloud-controller-manager
+    "Node\ncontroller".tooltip: the node isn't responding, has it been deleted from cloud?
+    "Route\ncontroller".tooltip: here's the routes the Kubernetes cluster has setup
+    "Service\ncontroller".tooltip: are the load balancers configured correctly?
+    link: layers.cloud-controller-manager
+  }
+}
+
+communicatingWit1: Communicating wit {
+  style.fill: transparent
+  style.stroke: transparent
+}
+communicatingWit2: Communicating wit {
+  style.fill: transparent
+  style.stroke: transparent
+}
+
+Control plane.kube-api-server -> communicatingWit1
+Control plane.cloud-controller-manager -> communicatingWit2
+
+layers: {
+  kube-controller-manager: {...@kube-controller-manager}
+  etcd: {...@etcd}
+  cloud-controller-manager: {...@cloud-controller-manager}
+}

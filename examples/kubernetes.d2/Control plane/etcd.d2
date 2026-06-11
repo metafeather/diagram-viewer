@@ -1,0 +1,44 @@
+classes: @../classes
+
+Header: |md
+  ## Persistent storage 
+  Since kubernetes makes decision in response to state changes, \
+  it must store the state. A distributed database like etcd is suitable\
+  because Kubernetes itself is built to be distributed
+|
+
+Content: "" {
+  kube-controller-manager.class: kube-controller-manager
+  kube-api-server.class: kube-api-server
+  etcd: "" {
+    etcd.class: etcd
+    code: "" {
+      shape: page
+      style.fill: white
+      text: |text
+        {
+          "desired_state": {
+            "pods": 3
+          },
+          "current_state": {
+            "pods": 2
+          }
+        }
+      |
+    }
+    etcd -- code: {style.stroke-dash: 3}
+    style.stroke-dash: 5
+  }
+  kube-controller-manager <-> kube-api-server
+  etcd <-> kube-api-server
+}
+
+Node: {
+  Pod1: Pod
+  Pod2: Pod
+  link: _._.layers.Nodes
+}
+
+# layers: {
+#   Nodes: {...@../Nodes/index}
+# }

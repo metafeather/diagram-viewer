@@ -1,0 +1,28 @@
+direction: right
+classes: @../classes
+
+Decoupled: {
+  icon: https://icons.terrastruct.com/essentials/059-success.svg
+  label.near: outside-top-center
+  shape: image
+  height: 40
+  width: 40
+}
+
+Kubernetes: {
+  icon: https://icons.terrastruct.com/azure/_Companies/Kubernetes.svg
+  shape: image
+  height: 40
+  width: 40
+}
+
+cloud-controller-manager: {
+  class: cloud-controller-manager
+  ...@../components.cloud-controller-manager
+}
+
+Infra: Infrastructure provided by you {style.stroke-dash: 4}
+Decoupled -> Kubernetes
+Decoupled -> Infra
+Kubernetes <-> cloud-controller-manager
+cloud-controller-manager <-> Infra
