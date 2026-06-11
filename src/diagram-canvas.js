@@ -297,6 +297,13 @@ class DiagramCanvas extends HTMLElement {
   }
 
   #handleSvgDimensions(svg) {
+    const iframeDoc = svg.ownerDocument;
+    if (iframeDoc && !iframeDoc.head.querySelector('style[data-viewer]')) {
+      const styleEl = iframeDoc.createElement('style');
+      styleEl.setAttribute('data-viewer', 'true');
+      styleEl.textContent = 'html, body { margin: 0; padding: 0; } svg { display: block; }';
+      iframeDoc.head.appendChild(styleEl);
+    }
     const width = svg.getAttribute('width') ?? svg.getBoundingClientRect().width;
     const height = svg.getAttribute('height') ?? svg.getBoundingClientRect().height;
     this.#setDimensionsAndScale(parseInt(width, 10) || 800, parseInt(height, 10) || 600);
