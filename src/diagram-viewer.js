@@ -812,15 +812,6 @@ class DiagramViewer extends HTMLElement {
     // Keyboard scoped to focus-within (host keydown in capture phase)
     this.addEventListener('keydown', (e) => this.#handleKeyDown(e), { signal, capture: true });
 
-    // Toolbar + dialog
-    this.#navTree.addEventListener('json-open', () => {
-      this.openJsonDialog();
-    }, { signal });
-
-    this.#navTree.addEventListener('reset', () => {
-      this.reset();
-    }, { signal });
-
     this.#initJsonDialog(signal);
   }
 

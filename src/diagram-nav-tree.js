@@ -15,8 +15,6 @@
  *   - sidebar-collapse: when collapse button clicked
  *   - zoom-in / zoom-out / zoom-reset: zoom button clicks
  *   - help-open: when ? button clicked
- *   - json-open: when JSON button clicked
- *   - reset: when Reset button clicked
  */
 
 const styles = `
@@ -272,29 +270,6 @@ const styles = `
   color: var(--color-primary, #6366f1);
 }
 
-.footer-text-btn {
-  align-items: center;
-  background: var(--color-bg, #fff);
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 0.25rem;
-  color: var(--color-text-light, #6b7280);
-  cursor: pointer;
-  display: flex;
-  font-family: inherit;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  height: 1.5rem;
-  justify-content: center;
-  line-height: 1;
-  padding: 0.125rem 0.5rem;
-  transition: all 150ms;
-}
-
-.footer-text-btn:hover {
-  background: var(--color-bg-hover, #f3f4f6);
-  border-color: #d1d5db;
-  color: var(--color-text, #2e3346);
-}
 `;
 
 class DiagramNavTree extends HTMLElement {
@@ -328,8 +303,6 @@ class DiagramNavTree extends HTMLElement {
       </div>
       <nav class="nav-tree"></nav>
       <div class="sidebar-footer">
-        <button class="footer-text-btn json-btn" title="Import/Export JSON">JSON</button>
-        <button class="footer-text-btn reset-btn" title="Reset to defaults">Reset</button>
         <span class="attribution">
           <a href="https://d2lang.com" target="_blank" rel="noopener">D2</a>
         </span>
@@ -363,12 +336,7 @@ class DiagramNavTree extends HTMLElement {
     this.shadowRoot.querySelector('.help-btn').addEventListener('click', () => {
       this.dispatchEvent(new CustomEvent('help-open', { bubbles: true, composed: true }));
     });
-    this.shadowRoot.querySelector('.json-btn').addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('json-open', { bubbles: true, composed: true }));
-    });
-    this.shadowRoot.querySelector('.reset-btn').addEventListener('click', () => {
-      this.dispatchEvent(new CustomEvent('reset', { bubbles: true, composed: true }));
-    });
+
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────
