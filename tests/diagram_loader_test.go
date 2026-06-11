@@ -166,6 +166,127 @@ func TestLoader_ForSelectorTargetsCorrectViewer(t *testing.T) {
 	}
 }
 
+func TestLoader_RecoversFromBadPath(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+
+	// Load a deliberately broken path
+	result, err := page.Evaluate(`async () => {
+		const loader = document.querySelector('diagram-loader');
+		const sr = loader.shadowRoot;
+		const input = sr.querySelector('input.path');
+		input.value = 'examples/kubernetes/manifest.json2';
+		sr.querySelector('button.load').click();
+		await new Promise(r => setTimeout(r, 1500));
+		const viewer = document.querySelector('diagram-viewer');
+		const container = viewer.shadowRoot.querySelector('.container');
+		const errorDiv = container.querySelector(':scope > .error');
+		return {
+			hasError: !!errorDiv,
+			errorText: errorDiv ? errorDiv.textContent : ''
+		};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if m["hasError"] != true {
+		t.Fatal("expected .error div after loading bad path")
+	}
+	if errText, ok := m["errorText"].(string); !ok || len(errText) == 0 {
+		t.Fatal("error div should contain text about failed manifest load")
+	}
+
+	// Now load the correct path — error should clear, viewer should work
+	result, err = page.Evaluate(`async () => {
+		const loader = document.querySelector('diagram-loader');
+		const sr = loader.shadowRoot;
+		const input = sr.querySelector('input.path');
+		input.value = 'examples/kubernetes/manifest.json';
+		sr.querySelector('button.load').click();
+		await new Promise(r => setTimeout(r, 1500));
+		const viewer = document.querySelector('diagram-viewer');
+		const container = viewer.shadowRoot.querySelector('.container');
+		const errorDiv = container.querySelector(':scope > .error');
+		const canvas = viewer.shadowRoot.querySelector('diagram-canvas');
+		const canvasHidden = canvas ? getComputedStyle(canvas).display === 'none' : true;
+		const sidebarCollapsed = container.classList.contains('sidebar-collapsed');
+		const tree = viewer.shadowRoot.querySelector('diagram-nav-tree');
+		const navItems = tree ? tree.shadowRoot.querySelectorAll('.nav-item') : [];
+		return {
+			hasError: !!errorDiv,
+			canvasVisible: !canvasHidden,
+			sidebarOpen: !sidebarCollapsed,
+			navCount: navItems.length
+		};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m = result.(map[string]interface{})
+	if m["hasError"] == true {
+		t.Fatal("error div should be removed after successful load")
+	}
+	if m["canvasVisible"] != true {
+		t.Fatal("canvas should be visible after recovery")
+	}
+	if m["sidebarOpen"] != true {
+		t.Fatal("sidebar should be open after recovery")
+	}
+	if toFloat(m["navCount"]) < 1 {
+		t.Fatal("nav tree should contain kubernetes items after recovery")
+	}
+}
+
+func TestLoader_RepeatedFailuresDoNotStack(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+
+	// First bad path
+	result, err := page.Evaluate(`async () => {
+		const loader = document.querySelector('diagram-loader');
+		const sr = loader.shadowRoot;
+		const input = sr.querySelector('input.path');
+		input.value = 'examples/kubernetes/manifest.json2';
+		sr.querySelector('button.load').click();
+		await new Promise(r => setTimeout(r, 1500));
+		const viewer = document.querySelector('diagram-viewer');
+		const container = viewer.shadowRoot.querySelector('.container');
+		const errors = container.querySelectorAll(':scope > .error');
+		return {count: errors.length};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m := result.(map[string]interface{})
+	if toFloat(m["count"]) != 1 {
+		t.Fatalf("expected exactly 1 .error div, got %v", m["count"])
+	}
+
+	// Second bad path — count should still be 1
+	result, err = page.Evaluate(`async () => {
+		const loader = document.querySelector('diagram-loader');
+		const sr = loader.shadowRoot;
+		const input = sr.querySelector('input.path');
+		input.value = 'examples/kubernetes/nonexistent.json';
+		sr.querySelector('button.load').click();
+		await new Promise(r => setTimeout(r, 1500));
+		const viewer = document.querySelector('diagram-viewer');
+		const container = viewer.shadowRoot.querySelector('.container');
+		const errors = container.querySelectorAll(':scope > .error');
+		return {count: errors.length};
+	}`)
+	if err != nil {
+		t.Fatalf("evaluate failed: %v", err)
+	}
+	m = result.(map[string]interface{})
+	if toFloat(m["count"]) != 1 {
+		t.Fatalf("expected exactly 1 .error div after second failure, got %v", m["count"])
+	}
+}
+
 func TestLoader_NoMatchingTargetIsNoOp(t *testing.T) {
 	page := newPage(t)
 	navigateToIndex(t, page)
