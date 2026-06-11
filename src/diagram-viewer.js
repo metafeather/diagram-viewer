@@ -158,6 +158,20 @@ diagram-help-modal {
 
 /* ─── JSON Dialog ────────────────────────────────────────────────────── */
 
+.json-dialog-backdrop {
+  align-items: center;
+  background: rgb(0 0 0 / 40%);
+  display: none;
+  inset: 0;
+  justify-content: center;
+  position: absolute;
+  z-index: 1000;
+}
+
+.json-dialog-backdrop.open {
+  display: flex;
+}
+
 .json-dialog {
   background: var(--color-bg);
   border: 1px solid var(--color-border);
@@ -167,11 +181,7 @@ diagram-help-modal {
   max-height: 80vh;
   max-width: 40rem;
   padding: 1rem;
-  width: 90vw;
-}
-
-.json-dialog::backdrop {
-  background: rgb(0 0 0 / 40%);
+  width: 90%;
 }
 
 .json-dialog-header {
@@ -521,19 +531,21 @@ class DiagramViewer extends HTMLElement {
         <diagram-canvas></diagram-canvas>
         <diagram-help-modal></diagram-help-modal>
         <div class="resize-overlay"></div>
-        <dialog class="json-dialog">
-          <div class="json-dialog-header">
-            <h2>Snapshot JSON</h2>
+        <div class="json-dialog-backdrop">
+          <div class="json-dialog">
+            <div class="json-dialog-header">
+              <h2>Snapshot JSON</h2>
+            </div>
+            <textarea spellcheck="false"></textarea>
+            <div class="json-dialog-footer">
+              <button class="json-copy">Copy</button>
+              <button class="json-apply primary">Apply</button>
+              <button class="json-close">Close</button>
+              <span class="json-dialog-error"></span>
+              <span class="json-dialog-copied"></span>
+            </div>
           </div>
-          <textarea spellcheck="false"></textarea>
-          <div class="json-dialog-footer">
-            <button class="json-copy">Copy</button>
-            <button class="json-apply primary">Apply</button>
-            <button class="json-close">Close</button>
-            <span class="json-dialog-error"></span>
-            <span class="json-dialog-copied"></span>
-          </div>
-        </dialog>
+        </div>
       </div>
     `;
   }
@@ -618,14 +630,14 @@ class DiagramViewer extends HTMLElement {
 
     // Toolbar + dialog
     this.#navTree.addEventListener('json-open', () => {
-      const dialog = this.shadowRoot.querySelector('.json-dialog');
-      const textarea = dialog.querySelector('textarea');
+      const backdrop = this.shadowRoot.querySelector('.json-dialog-backdrop');
+      const textarea = backdrop.querySelector('textarea');
       const errorEl = this.shadowRoot.querySelector('.json-dialog-error');
       const copiedEl = this.shadowRoot.querySelector('.json-dialog-copied');
       errorEl.textContent = '';
       copiedEl.textContent = '';
       textarea.value = JSON.stringify(this.#getSnapshot(), null, 2);
-      dialog.showModal();
+      backdrop.classList.add('open');
     }, { signal });
 
     this.#navTree.addEventListener('reset', () => {
@@ -637,8 +649,8 @@ class DiagramViewer extends HTMLElement {
 
   #initJsonDialog(signal) {
     const $ = (s) => this.shadowRoot.querySelector(s);
-    const dialog = $('.json-dialog');
-    const textarea = dialog.querySelector('textarea');
+    const backdrop = $('.json-dialog-backdrop');
+    const textarea = backdrop.querySelector('textarea');
     const errorEl = $('.json-dialog-error');
     const copiedEl = $('.json-dialog-copied');
 
@@ -674,12 +686,17 @@ class DiagramViewer extends HTMLElement {
       // Full replace
       try { localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed)); } catch { /* noop */ }
       this.#applySnapshot(parsed);
-      dialog.close();
+      backdrop.classList.remove('open');
     }, { signal });
 
     // Close
     $('.json-close').addEventListener('click', () => {
-      dialog.close();
+      backdrop.classList.remove('open');
+    }, { signal });
+
+    // Backdrop click closes
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) backdrop.classList.remove('open');
     }, { signal });
   }
 
@@ -942,10 +959,15 @@ class DiagramViewer extends HTMLElement {
   }
 
   #handleKeyDown(e) {
-    if (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA') return;
+    if (e.key !== 'Escape' && (e.target?.tagName === 'INPUT' || e.target?.tagName === 'TEXTAREA')) return;
 
     if (e.key === 'Escape') {
       e.preventDefault?.();
+      const backdrop = this.shadowRoot.querySelector('.json-dialog-backdrop');
+      if (backdrop.classList.contains('open')) {
+        backdrop.classList.remove('open');
+        return;
+      }
       this.#helpModal.close();
       return;
     }
