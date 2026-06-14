@@ -5,15 +5,22 @@
 
 import styles from './diagram-help-modal.css';
 
+let _sharedSheet = null;
+function getSharedSheet() {
+  if (!_sharedSheet && styles) {
+    _sharedSheet = new CSSStyleSheet();
+    _sharedSheet.replaceSync(styles);
+  }
+  return _sharedSheet;
+}
+
 class DiagramHelpModal extends HTMLElement {
   #backdrop;
-  #sheet = new CSSStyleSheet();
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.#sheet.replaceSync(styles);
-    this.shadowRoot.adoptedStyleSheets = [this.#sheet];
+    this.shadowRoot.adoptedStyleSheets = [getSharedSheet()];
   }
 
   connectedCallback() {

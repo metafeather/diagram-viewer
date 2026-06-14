@@ -33,6 +33,15 @@ const iframeStyles = `
 
 import styles from './diagram-canvas.css';
 
+let _sharedSheet = null;
+function getSharedSheet() {
+  if (!_sharedSheet && styles) {
+    _sharedSheet = new CSSStyleSheet();
+    _sharedSheet.replaceSync(styles);
+  }
+  return _sharedSheet;
+}
+
 class DiagramCanvas extends HTMLElement {
   #iframe;
   #iframeContainer;
@@ -42,7 +51,6 @@ class DiagramCanvas extends HTMLElement {
   #basePath = '';
   #flatSlides = [];
   #currentSlide = null;
-  #sheet = new CSSStyleSheet();
 
   // Iframe event handlers
   #iframeKeyboardHandler = null;
@@ -51,8 +59,7 @@ class DiagramCanvas extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.#sheet.replaceSync(styles);
-    this.shadowRoot.adoptedStyleSheets = [this.#sheet];
+    this.shadowRoot.adoptedStyleSheets = [getSharedSheet()];
   }
 
   connectedCallback() {

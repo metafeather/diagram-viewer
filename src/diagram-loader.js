@@ -7,21 +7,27 @@
 
 import styles from './diagram-loader.css';
 
+let _sharedSheet = null;
+function getSharedSheet() {
+  if (!_sharedSheet && styles) {
+    _sharedSheet = new CSSStyleSheet();
+    _sharedSheet.replaceSync(styles);
+  }
+  return _sharedSheet;
+}
+
 class DiagramLoader extends HTMLElement {
   static get observedAttributes() {
     return ['for', 'placeholder', 'value'];
   }
 
   #input;
-  #sheet;
 
   constructor() {
     super();
     const shadow = this.attachShadow({ mode: 'open' });
 
-    this.#sheet = new CSSStyleSheet();
-    this.#sheet.replaceSync(styles);
-    shadow.adoptedStyleSheets = [this.#sheet];
+    shadow.adoptedStyleSheets = [getSharedSheet()];
 
     shadow.innerHTML = `
       <div class="row">

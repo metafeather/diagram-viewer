@@ -37,14 +37,17 @@ function fnv1a32(str) {
 
 import styles from './diagram-viewer.css';
 
+let _sharedSheet = null;
+function getSharedSheet() {
+  if (!_sharedSheet && styles) {
+    _sharedSheet = new CSSStyleSheet();
+    _sharedSheet.replaceSync(styles);
+  }
+  return _sharedSheet;
+}
+
 class DiagramViewer extends HTMLElement {
   static observedAttributes = ['manifest', 'base-path', 'sidebar', 'zoom', 'start-at', 'bookmarkable', 'primary'];
-
-  // Shared CSSStyleSheet — adopted by every instance via adoptedStyleSheets.
-  // This sheet is READ-ONLY at runtime; do NOT call replaceSync/replace on it
-  // after initialisation, as mutations would affect all living instances.
-  static #styles = new CSSStyleSheet();
-  static { this.#styles.replaceSync(styles); }
 
   // State
   #instanceId = '';
@@ -72,7 +75,7 @@ class DiagramViewer extends HTMLElement {
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.shadowRoot.adoptedStyleSheets = [DiagramViewer.#styles];
+    this.shadowRoot.adoptedStyleSheets = [getSharedSheet()];
   }
 
   connectedCallback() {

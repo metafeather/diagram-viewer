@@ -19,6 +19,14 @@
 
 import styles from './diagram-nav-tree.css';
 
+let _sharedSheet = null;
+function getSharedSheet() {
+  if (!_sharedSheet && styles) {
+    _sharedSheet = new CSSStyleSheet();
+    _sharedSheet.replaceSync(styles);
+  }
+  return _sharedSheet;
+}
 
 class DiagramNavTree extends HTMLElement {
   #manifest = null;
@@ -27,13 +35,11 @@ class DiagramNavTree extends HTMLElement {
   #navTreeEl;
   #titleEl;
   #zoomLevelEl;
-  #sheet = new CSSStyleSheet();
 
   constructor() {
     super();
     this.attachShadow({ mode: 'open' });
-    this.#sheet.replaceSync(styles);
-    this.shadowRoot.adoptedStyleSheets = [this.#sheet];
+    this.shadowRoot.adoptedStyleSheets = [getSharedSheet()];
   }
 
   connectedCallback() {
