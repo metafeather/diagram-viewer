@@ -31,41 +31,7 @@ const iframeStyles = `
   img { display: block; max-width: none; }
 `;
 
-const styles = `
-:host {
-  contain: strict;
-  display: block;
-  grid-area: viewer;
-  overflow: auto;
-  padding: 0.25rem;
-  position: relative;
-  background: var(--color-bg, #fff);
-}
-
-.iframe-container {
-  display: inline-block;
-  padding: 1rem;
-}
-
-iframe {
-  background: transparent;
-  border: none;
-  display: block;
-  transform-origin: top left;
-}
-
-.resize-overlay {
-  cursor: col-resize;
-  display: none;
-  inset: 0;
-  position: absolute;
-  z-index: 1000;
-}
-
-:host(.resizing) .resize-overlay {
-  display: block;
-}
-`;
+import styles from './diagram-canvas.css';
 
 class DiagramCanvas extends HTMLElement {
   #iframe;

@@ -5,63 +5,7 @@
  * Attributes: for, placeholder, value
  */
 
-const styles = `
-:host {
-  display: block;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-}
-
-.row {
-  align-items: center;
-  display: flex;
-  gap: 0.375rem;
-}
-
-.path {
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 0.25rem;
-  color: var(--color-text, #2e3346);
-  flex: 1;
-  font-family: inherit;
-  font-size: 0.75rem;
-  height: 1.5rem;
-  padding: 0 0.5rem;
-  transition: border-color 150ms;
-}
-
-.path:focus {
-  border-color: var(--color-primary, #6366f1);
-  outline: none;
-}
-
-.path.error {
-  border-color: var(--color-error, #ef4444);
-}
-
-button {
-  align-items: center;
-  background: var(--color-bg, #fff);
-  border: 1px solid var(--color-border, #e5e5e5);
-  border-radius: 0.25rem;
-  color: var(--color-text-light, #6b7280);
-  cursor: pointer;
-  display: flex;
-  font-family: inherit;
-  font-size: 0.6875rem;
-  font-weight: 500;
-  height: 1.5rem;
-  justify-content: center;
-  line-height: 1;
-  padding: 0.125rem 0.5rem;
-  transition: all 150ms;
-}
-
-button:hover {
-  background: var(--color-bg-hover, #f3f4f6);
-  border-color: #d1d5db;
-  color: var(--color-text, #2e3346);
-}
-`;
+import styles from './diagram-loader.css';
 
 class DiagramLoader extends HTMLElement {
   static get observedAttributes() {
