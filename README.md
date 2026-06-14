@@ -2,6 +2,35 @@
 
 Single vanilla HTML file hosting a standalone WebComponent + localstorage display of a stack og SVG or PNG's in an interactive Diagram view.
 
+## Use via CDN (jsdelivr)
+
+A single `<script>` tag is all you need — no CSS link required. All component
+styles are bundled inside the JS and adopted into shadow roots automatically.
+
+```html
+<script type="module"
+  src="https://cdn.jsdelivr.net/gh/metafeather-org/diagram-viewer@v0.1.0/dist/diagram-viewer.js"></script>
+
+<diagram-loader for="#viewer"></diagram-loader>
+<diagram-viewer id="viewer"></diagram-viewer>
+```
+
+**Pin to a tag** (e.g. `@v0.1.0`) for production use. Using `@main` will track
+the latest commit and may break without notice.
+
+**Page layout is your responsibility.** The components have no opinion about
+page-level sizing. At minimum, give `<diagram-viewer>` a height:
+
+```css
+diagram-viewer { display: block; height: 100vh; width: 100%; }
+```
+
+See the `<style>` block in [`index.html`](index.html) for a copy-paste starter.
+
+> **Breaking change:** `dist/diagram-viewer.css` is no longer produced. If you
+> previously linked it, move the page-level layout rules (shown above) into your
+> own stylesheet or inline `<style>` block.
+
 ## Build
 
 1. Golang is the primary runtime for installing tools using `go tool` in v1.26+
