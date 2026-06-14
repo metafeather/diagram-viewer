@@ -8,14 +8,12 @@ tasks:
   build:
     desc: Bundle src/ into dist/
     cmds:
-      - go tool esbuild src/diagram-viewer.js --bundle --format=esm --target=es2022 --outfile=dist/diagram-viewer.js
-      - go tool esbuild src/styles.css --bundle --outfile=dist/diagram-viewer.css
+      - go tool esbuild src/diagram-viewer.js --bundle --format=esm --target=es2022 --loader:.css=text --outfile=dist/diagram-viewer.js
 
   dev:
     desc: Watch src/ and rebuild on change
     cmds:
-      - go tool esbuild src/diagram-viewer.js --bundle --format=esm --target=es2022 --outfile=dist/diagram-viewer.js --watch &
-      - go tool esbuild src/styles.css --bundle --outfile=dist/diagram-viewer.css --watch
+      - go tool esbuild src/diagram-viewer.js --bundle --format=esm --target=es2022 --loader:.css=text --outfile=dist/diagram-viewer.js --watch
 
   test:
     desc: Run Playwright end-to-end tests
