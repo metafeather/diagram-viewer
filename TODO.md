@@ -8,7 +8,7 @@ Bundle the diagram-viewer into a single ESM `dist/diagram-viewer.js` (no separat
 
 ### 1. Externalise per-component shadow CSS
 
-- [x] `src/diagram-canvas.js` — move the `const styles = \`...\`` template literal into `src/diagram-canvas.css` and replace it with `import styles from "./diagram-canvas.css";`.
+- [x] `src/diagram-canvas.js` — move the `const styles = \`...\``template literal into`src/diagram-canvas.css`and replace it with`import styles from "./diagram-canvas.css";`.
 - [x] `src/diagram-help-modal.js` — same treatment → `src/diagram-help-modal.css`.
 - [x] `src/diagram-loader.js` — same treatment → `src/diagram-loader.css`.
 - [x] `src/diagram-nav-tree.js` — same treatment → `src/diagram-nav-tree.css`.
@@ -50,7 +50,7 @@ Bundle the diagram-viewer into a single ESM `dist/diagram-viewer.js` (no separat
 
 ### 8. Document CDN usage
 
-- [x] Add a "Use via CDN (jsdelivr)" section to `README.md` showing a one-liner: `<script type="module" src="https://cdn.jsdelivr.net/gh/metafeather-org/diagram-viewer@<tag>/dist/diagram-viewer.js"></script>` plus minimal `<diagram-viewer>` / `<diagram-loader>` markup.
+- [x] Add a "Use via CDN (jsdelivr)" section to `README.md` showing a one-liner: `<script type="module" src="https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@<tag>/dist/diagram-viewer.js"></script>` plus minimal `<diagram-viewer>` / `<diagram-loader>` markup.
 - [x] State that no CSS link is required — all component styles are bundled and adopted into shadow roots.
 - [x] Recommend pinning to a tag (e.g. `@v0.1.0`) over `@main` for production.
 - [x] Note that the consumer owns page-level layout (e.g. giving `<diagram-viewer>` a height); link to the inline `<style>` block in `index.html` as a copy-paste starter.

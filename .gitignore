@@ -3,7 +3,8 @@
 **/.DS_Store
 
 # Build output
-dist/
+dist/*
+!dist/diagram-viewer.js
 
 # Node modules (if any)
 node_modules/

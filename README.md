@@ -8,8 +8,10 @@ A single `<script>` tag is all you need — no CSS link required. All component
 styles are bundled inside the JS and adopted into shadow roots automatically.
 
 ```html
-<script type="module"
-  src="https://cdn.jsdelivr.net/gh/metafeather-org/diagram-viewer@v0.1.0/dist/diagram-viewer.js"></script>
+<script
+  type="module"
+  src="https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@v0.1.0/dist/diagram-viewer.js"
+></script>
 
 <diagram-loader for="#viewer"></diagram-loader>
 <diagram-viewer id="viewer"></diagram-viewer>
@@ -22,7 +24,11 @@ the latest commit and may break without notice.
 page-level sizing. At minimum, give `<diagram-viewer>` a height:
 
 ```css
-diagram-viewer { display: block; height: 100vh; width: 100%; }
+diagram-viewer {
+  display: block;
+  height: 100vh;
+  width: 100%;
+}
 ```
 
 See the `<style>` block in [`index.html`](index.html) for a copy-paste starter.
@@ -57,18 +63,18 @@ The `<diagram-loader>` custom element provides a file-loading toolbar that targe
 
 ### Attributes
 
-| Attribute | Description |
-|-----------|-------------|
+| Attribute | Description                                                                                                  |
+| --------- | ------------------------------------------------------------------------------------------------------------ |
 | `for`     | CSS selector identifying the target `<diagram-viewer>` element (e.g. `#my-viewer`, `.viewer:first-of-type`). |
 
 ### Controls
 
-| Control | Description |
-|---------|-------------|
-| Text input | Path/URL to a diagram manifest. Press Enter or click **Load**. |
-| **Load** | Fetches the manifest from the entered URL and loads it into the target viewer. |
-| **JSON** | Opens the JSON-paste dialog on the target viewer (previously in the sidebar). |
-| **Reset** | Clears the viewer state (previously in the sidebar). |
+| Control    | Description                                                                    |
+| ---------- | ------------------------------------------------------------------------------ |
+| Text input | Path/URL to a diagram manifest. Press Enter or click **Load**.                 |
+| **Load**   | Fetches the manifest from the entered URL and loads it into the target viewer. |
+| **JSON**   | Opens the JSON-paste dialog on the target viewer (previously in the sidebar).  |
+| **Reset**  | Clears the viewer state (previously in the sidebar).                           |
 
 ### Design notes
 
@@ -86,4 +92,3 @@ Each viewer can have its own `<diagram-loader>` pointed at it via the `for` attr
 - D2 Tour https://d2lang.com/tour/intro/
 - D2 Code https://github.com/terrastruct/d2
 - D2 Studio https://terrastruct.com/d2-studio/
-- Diagram Viewer v0 /Users/metafeather/Developer/src/metafeather.net/codelabs/d2/
