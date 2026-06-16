@@ -81,6 +81,14 @@ The `<diagram-loader>` custom element provides a file-loading toolbar that targe
 - **Public-method communication** — the loader calls methods directly on the target element (`loadFromUrl`, `openJsonDialog`, `reset`) rather than dispatching events. This keeps the coupling explicit and avoids event-ordering issues.
 - **Base-path derivation** — the viewer (not the loader) derives the base path from the URL passed to `loadFromUrl`, stripping the filename to resolve relative image paths.
 
+### Manifest path rules
+
+- Paths in the manifest JSON must be **raw, unencoded relative paths** — e.g. `"Control Plane/x.svg"`, never `"Control%20Plane/x.svg"`.
+- The component resolves each path against `base-path` (or the manifest URL's directory) using the browser's `URL` constructor.
+- **Rationale:** this avoids double-encoding when served by static-site generators that already percent-encode URLs in the surrounding HTML.
+
+> **Breaking change:** The `slide.path` property in `slide-change` event details is now an absolute URL string (the resolved `URL.href`), not a relative path.
+
 ## Multi-instance
 
 See `examples/multi.html` for a side-by-side demo of two `<diagram-viewer>` elements sharing one manifest, with only the right instance owning the URL hash.
