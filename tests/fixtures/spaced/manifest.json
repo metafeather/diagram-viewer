@@ -1,0 +1,11 @@
+{
+  "name": "Spaced Paths Test",
+  "layers": [
+    {
+      "id": "control-plane",
+      "title": "Control Plane",
+      "path": "Control Plane/diagram.svg",
+      "type": "layer"
+    }
+  ]
+}

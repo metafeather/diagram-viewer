@@ -1,6 +1,5 @@
 // src/diagram-loader.css
-var diagram_loader_default =
-  ":host {\n  display: block;\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n}\n\n.row {\n  align-items: center;\n  display: flex;\n  gap: 0.375rem;\n}\n\n.path {\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text, #2e3346);\n  flex: 1;\n  font-family: inherit;\n  font-size: 0.75rem;\n  height: 1.5rem;\n  padding: 0 0.5rem;\n  transition: border-color 150ms;\n}\n\n.path:focus {\n  border-color: var(--color-primary, #6366f1);\n  outline: none;\n}\n\n.path.error {\n  border-color: var(--color-error, #ef4444);\n}\n\nbutton {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text-light, #6b7280);\n  cursor: pointer;\n  display: flex;\n  font-family: inherit;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  height: 1.5rem;\n  justify-content: center;\n  line-height: 1;\n  padding: 0.125rem 0.5rem;\n  transition: all 150ms;\n}\n\nbutton:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: #d1d5db;\n  color: var(--color-text, #2e3346);\n}\n";
+var diagram_loader_default = ":host {\n  display: block;\n  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;\n}\n\n.row {\n  align-items: center;\n  display: flex;\n  gap: 0.375rem;\n}\n\n.path {\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text, #2e3346);\n  flex: 1;\n  font-family: inherit;\n  font-size: 0.75rem;\n  height: 1.5rem;\n  padding: 0 0.5rem;\n  transition: border-color 150ms;\n}\n\n.path:focus {\n  border-color: var(--color-primary, #6366f1);\n  outline: none;\n}\n\n.path.error {\n  border-color: var(--color-error, #ef4444);\n}\n\nbutton {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text-light, #6b7280);\n  cursor: pointer;\n  display: flex;\n  font-family: inherit;\n  font-size: 0.6875rem;\n  font-weight: 500;\n  height: 1.5rem;\n  justify-content: center;\n  line-height: 1;\n  padding: 0.125rem 0.5rem;\n  transition: all 150ms;\n}\n\nbutton:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: #d1d5db;\n  color: var(--color-text, #2e3346);\n}\n";
 
 // src/diagram-loader.js
 var _sharedSheet = null;
@@ -32,15 +31,9 @@ var DiagramLoader = class extends HTMLElement {
     this.#input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") this.#handleLoad();
     });
-    shadow
-      .querySelector(".load")
-      .addEventListener("click", () => this.#handleLoad());
-    shadow
-      .querySelector(".json")
-      .addEventListener("click", () => this.#handleJson());
-    shadow
-      .querySelector(".reset")
-      .addEventListener("click", () => this.#handleReset());
+    shadow.querySelector(".load").addEventListener("click", () => this.#handleLoad());
+    shadow.querySelector(".json").addEventListener("click", () => this.#handleJson());
+    shadow.querySelector(".reset").addEventListener("click", () => this.#handleReset());
   }
   attributeChangedCallback(name, _old, val) {
     if (name === "placeholder" && this.#input) {
@@ -88,14 +81,11 @@ var DiagramLoader = class extends HTMLElement {
 if (!customElements.get("diagram-loader")) {
   customElements.define("diagram-loader", DiagramLoader);
 } else if (customElements.get("diagram-loader") !== DiagramLoader) {
-  console.warn(
-    '[diagram-loader] A different constructor is already registered under "diagram-loader". Skipping re-definition.',
-  );
+  console.warn('[diagram-loader] A different constructor is already registered under "diagram-loader". Skipping re-definition.');
 }
 
 // src/diagram-canvas.css
-var diagram_canvas_default =
-  ":host {\n  contain: strict;\n  display: block;\n  grid-area: viewer;\n  overflow: auto;\n  padding: 0.25rem;\n  position: relative;\n  background: var(--color-bg, #fff);\n}\n\n.iframe-container {\n  display: inline-block;\n  padding: 1rem;\n}\n\niframe {\n  background: transparent;\n  border: none;\n  display: block;\n  transform-origin: top left;\n}\n\n.resize-overlay {\n  cursor: col-resize;\n  display: none;\n  inset: 0;\n  position: absolute;\n  z-index: 1000;\n}\n\n:host(.resizing) .resize-overlay {\n  display: block;\n}\n";
+var diagram_canvas_default = ":host {\n  contain: strict;\n  display: block;\n  grid-area: viewer;\n  overflow: auto;\n  padding: 0.25rem;\n  position: relative;\n  background: var(--color-bg, #fff);\n}\n\n.iframe-container {\n  display: inline-block;\n  padding: 1rem;\n}\n\niframe {\n  background: transparent;\n  border: none;\n  display: block;\n  transform-origin: top left;\n}\n\n.resize-overlay {\n  cursor: col-resize;\n  display: none;\n  inset: 0;\n  position: absolute;\n  z-index: 1000;\n}\n\n:host(.resizing) .resize-overlay {\n  display: block;\n}\n";
 
 // src/diagram-canvas.js
 var ZOOM_STEP = 0.5;
@@ -122,7 +112,6 @@ var DiagramCanvas = class extends HTMLElement {
   #zoomLevel = 1.5;
   #zoomExplicitlySet = false;
   #initialLoadDone = false;
-  #basePath = "";
   #flatSlides = [];
   #currentSlide = null;
   // Iframe event handlers
@@ -149,9 +138,7 @@ var DiagramCanvas = class extends HTMLElement {
       this.#handleIframeLoad();
       this.#handleIframeNavigation();
     });
-    this.addEventListener("wheel", (e) => this.#handleWheelZoom(e), {
-      passive: false,
-    });
+    this.addEventListener("wheel", (e) => this.#handleWheelZoom(e), { passive: false });
   }
   // ─── Public API ───────────────────────────────────────────────────────────
   get zoomPercent() {
@@ -167,8 +154,9 @@ var DiagramCanvas = class extends HTMLElement {
   get zoomLevel() {
     return this.#zoomLevel;
   }
-  set basePath(val) {
-    this.#basePath = val ?? "";
+  // No-op: basePath is retained for API compat with diagram-viewer but no
+  // longer used internally — slide.path is now an absolute URL.
+  set basePath(_val) {
   }
   set flatSlides(val) {
     this.#flatSlides = val ?? [];
@@ -198,25 +186,20 @@ var DiagramCanvas = class extends HTMLElement {
     this.classList.toggle("resizing", active);
   }
   /** Forward keyboard event from parent/iframe */
-  handleKeyDown(e) {}
+  handleKeyDown(e) {
+  }
   // ─── Private ──────────────────────────────────────────────────────────────
   #dispatchZoomChange() {
-    this.dispatchEvent(
-      new CustomEvent("zoom-change", {
-        detail: { zoomPercent: this.zoomPercent },
-        bubbles: true,
-        composed: true,
-      }),
-    );
+    this.dispatchEvent(new CustomEvent("zoom-change", {
+      detail: { zoomPercent: this.zoomPercent },
+      bubbles: true,
+      composed: true
+    }));
   }
   #resolveUrlToSlide(href, baseUrl = globalThis.location.href) {
     try {
-      const url = new URL(href, baseUrl);
-      const path = decodeURIComponent(url.pathname);
-      const baseIndex = path.indexOf(`${this.#basePath}/`);
-      if (baseIndex === -1) return null;
-      const relativePath = path.substring(baseIndex);
-      const index = this.#flatSlides.findIndex((s) => s.path === relativePath);
+      const resolved = new URL(href, baseUrl).href;
+      const index = this.#flatSlides.findIndex((s) => s.path === resolved);
       return index !== -1 ? { slide: this.#flatSlides[index], index } : null;
     } catch {
       return null;
@@ -224,21 +207,17 @@ var DiagramCanvas = class extends HTMLElement {
   }
   #getIframeSrc() {
     const locationHref = this.#iframe.contentWindow?.location?.href;
-    return locationHref && !locationHref.startsWith("about:")
-      ? locationHref
-      : this.#iframe.src;
+    return locationHref && !locationHref.startsWith("about:") ? locationHref : this.#iframe.src;
   }
   #handleIframeNavigation() {
     try {
       const result = this.#resolveUrlToSlide(this.#getIframeSrc());
       if (result && result.slide.id !== this.#currentSlide?.id) {
-        this.dispatchEvent(
-          new CustomEvent("slide-navigate", {
-            detail: { id: result.slide.id, index: result.index },
-            bubbles: true,
-            composed: true,
-          }),
-        );
+        this.dispatchEvent(new CustomEvent("slide-navigate", {
+          detail: { id: result.slide.id, index: result.index },
+          bubbles: true,
+          composed: true
+        }));
       }
       this.#setupIframeEventHandlers();
     } catch {
@@ -247,8 +226,7 @@ var DiagramCanvas = class extends HTMLElement {
   }
   #setupIframeEventHandlers() {
     try {
-      const iframeDoc =
-        this.#iframe.contentDocument ?? this.#iframe.contentWindow?.document;
+      const iframeDoc = this.#iframe.contentDocument ?? this.#iframe.contentWindow?.document;
       if (!iframeDoc) return;
       if (this.#iframeKeyboardHandler) {
         iframeDoc.removeEventListener("keydown", this.#iframeKeyboardHandler);
@@ -269,24 +247,16 @@ var DiagramCanvas = class extends HTMLElement {
         "-",
         "0",
         "?",
-        "Escape",
+        "Escape"
       ]);
       this.#iframeKeyboardHandler = (e) => {
         if (navKeys.has(e.key)) {
           e.preventDefault();
-          this.dispatchEvent(
-            new CustomEvent("iframe-keydown", {
-              detail: {
-                key: e.key,
-                ctrlKey: e.ctrlKey,
-                altKey: e.altKey,
-                metaKey: e.metaKey,
-                shiftKey: e.shiftKey,
-              },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          this.dispatchEvent(new CustomEvent("iframe-keydown", {
+            detail: { key: e.key, ctrlKey: e.ctrlKey, altKey: e.altKey, metaKey: e.metaKey, shiftKey: e.shiftKey },
+            bubbles: true,
+            composed: true
+          }));
         }
       };
       this.#iframeLinkClickHandler = (e) => {
@@ -295,30 +265,25 @@ var DiagramCanvas = class extends HTMLElement {
           this.focus({ preventScroll: true });
           return;
         }
-        const href =
-          link.getAttribute("href") || link.getAttributeNS(XLINK_NS, "href");
+        const href = link.getAttribute("href") || link.getAttributeNS(XLINK_NS, "href");
         if (!href) return;
-        const result = this.#resolveUrlToSlide(
-          href,
-          this.#iframe.contentWindow?.location?.href,
-        );
+        const result = this.#resolveUrlToSlide(href, this.#iframe.contentWindow?.location?.href);
         if (result) {
           e.preventDefault();
           e.stopPropagation();
-          this.dispatchEvent(
-            new CustomEvent("slide-navigate", {
-              detail: { id: result.slide.id, index: result.index },
-              bubbles: true,
-              composed: true,
-            }),
-          );
+          this.dispatchEvent(new CustomEvent("slide-navigate", {
+            detail: { id: result.slide.id, index: result.index },
+            bubbles: true,
+            composed: true
+          }));
           return;
         }
         this.focus({ preventScroll: true });
       };
       iframeDoc.addEventListener("keydown", this.#iframeKeyboardHandler);
       iframeDoc.addEventListener("click", this.#iframeLinkClickHandler);
-    } catch {}
+    } catch {
+    }
   }
   #handleIframeLoad() {
     try {
@@ -345,24 +310,15 @@ var DiagramCanvas = class extends HTMLElement {
   }
   #handleSvgDimensions(svg) {
     const iframeDoc = svg.ownerDocument;
-    if (
-      iframeDoc?.head &&
-      !iframeDoc.head.querySelector("style[data-viewer]")
-    ) {
+    if (iframeDoc?.head && !iframeDoc.head.querySelector("style[data-viewer]")) {
       const styleEl = iframeDoc.createElement("style");
       styleEl.setAttribute("data-viewer", "true");
-      styleEl.textContent =
-        "html, body { margin: 0; padding: 0; } svg { display: block; }";
+      styleEl.textContent = "html, body { margin: 0; padding: 0; } svg { display: block; }";
       iframeDoc.head.appendChild(styleEl);
     }
-    const width =
-      svg.getAttribute("width") ?? svg.getBoundingClientRect().width;
-    const height =
-      svg.getAttribute("height") ?? svg.getBoundingClientRect().height;
-    this.#setDimensionsAndScale(
-      parseInt(width, 10) || 800,
-      parseInt(height, 10) || 600,
-    );
+    const width = svg.getAttribute("width") ?? svg.getBoundingClientRect().width;
+    const height = svg.getAttribute("height") ?? svg.getBoundingClientRect().height;
+    this.#setDimensionsAndScale(parseInt(width, 10) || 800, parseInt(height, 10) || 600);
   }
   #handleImageInIframe(imageSrc) {
     const overlayPath = this.#currentSlide?.overlay;
@@ -400,16 +356,12 @@ var DiagramCanvas = class extends HTMLElement {
     }
   }
   #handleImageDimensions(img) {
-    this.#setDimensionsAndScale(
-      img.naturalWidth || 800,
-      img.naturalHeight || 600,
-    );
+    this.#setDimensionsAndScale(img.naturalWidth || 800, img.naturalHeight || 600);
   }
   #setDimensionsAndScale(width, height) {
     const viewerW = this.clientWidth;
     const viewerH = this.clientHeight;
-    const remToPx =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const padding = 2 * remToPx;
     const scaleX = (viewerW - padding) / width;
     const scaleY = (viewerH - padding) / height;
@@ -438,8 +390,7 @@ var DiagramCanvas = class extends HTMLElement {
     const baseW = parseFloat(this.#iframe.dataset.baseWidth) || 800;
     const baseH = parseFloat(this.#iframe.dataset.baseHeight) || 600;
     const scale = fitScale * this.#zoomLevel;
-    const remToPx =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const padding = 2 * remToPx;
     this.#iframe.style.transform = `scale(${scale})`;
     const scaledW = baseW * scale;
@@ -458,10 +409,7 @@ var DiagramCanvas = class extends HTMLElement {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       const delta = e.deltaY > 0 ? -ZOOM_STEP : ZOOM_STEP;
-      this.#zoomLevel = Math.max(
-        ZOOM_MIN,
-        Math.min(ZOOM_MAX, this.#zoomLevel + delta),
-      );
+      this.#zoomLevel = Math.max(ZOOM_MIN, Math.min(ZOOM_MAX, this.#zoomLevel + delta));
       this.#applyZoom();
     }
   }
@@ -469,14 +417,11 @@ var DiagramCanvas = class extends HTMLElement {
 if (!customElements.get("diagram-canvas")) {
   customElements.define("diagram-canvas", DiagramCanvas);
 } else if (customElements.get("diagram-canvas") !== DiagramCanvas) {
-  console.warn(
-    '[diagram-canvas] A different constructor is already registered under "diagram-canvas". Skipping re-definition.',
-  );
+  console.warn('[diagram-canvas] A different constructor is already registered under "diagram-canvas". Skipping re-definition.');
 }
 
 // src/diagram-nav-tree.css
-var diagram_nav_tree_default =
-  ":host {\n  display: contents;\n}\n\n.sidebar-header {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border-block-end: 1px solid var(--color-border, #e5e5e5);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  display: flex;\n  gap: 0.625rem;\n  grid-area: sidebar-header;\n  height: 3rem;\n  padding: 0.75rem 1rem;\n}\n\n.sidebar-header svg {\n  color: var(--color-primary, #6366f1);\n  flex-shrink: 0;\n  height: 1.25rem;\n  width: 1.25rem;\n}\n\n.sidebar-header h1 {\n  color: var(--color-text, #2e3346);\n  flex: 1;\n  font-size: 0.875rem;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.sidebar-collapse-btn {\n  align-items: center;\n  background: transparent;\n  border: none;\n  border-radius: 0.25rem;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.sidebar-collapse-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text-light, #6b7280);\n}\n\n.sidebar-collapse-btn svg {\n  color: inherit;\n  height: 0.875rem;\n  width: 0.875rem;\n}\n\n.nav-tree {\n  background: var(--color-bg, #fff);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  grid-area: sidebar-nav;\n  overflow-y: auto;\n  padding: 0.25rem 0.5rem;\n}\n\n.nav-group { margin: 0; }\n\n.nav-row {\n  align-items: center;\n  display: flex;\n  gap: 0;\n}\n\n.nav-toggle {\n  align-items: center;\n  background: transparent;\n  border: none;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  flex-shrink: 0;\n  height: 1.5rem;\n  justify-content: center;\n  padding: 0;\n  width: 1.25rem;\n}\n\n.nav-toggle:hover { color: var(--color-text-light, #6b7280); }\n\n.nav-toggle svg {\n  height: 0.625rem;\n  transition: transform 150ms;\n  width: 0.625rem;\n}\n\n.nav-toggle.collapsed svg { transform: rotate(-90deg); }\n.nav-toggle.no-children { visibility: hidden; }\n\n.step-bullet {\n  align-items: center;\n  background: transparent;\n  border: none;\n  color: transparent;\n  display: flex;\n  flex-shrink: 0;\n  font-size: 0.375rem;\n  height: 1.5rem;\n  justify-content: center;\n  padding: 0;\n  width: 1.25rem;\n}\n\n.step-bullet.active { color: var(--color-primary, #6366f1); }\n\n.nav-item {\n  align-items: center;\n  border-radius: 0.25rem;\n  color: var(--color-text-muted, #5c5f77);\n  cursor: pointer;\n  display: flex;\n  flex: 1;\n  font-size: 0.8125rem;\n  gap: 0.375rem;\n  min-width: 0;\n  padding: 0.375rem 0.5rem;\n  text-decoration: none;\n}\n\n.nav-item:focus {\n  outline: none;\n}\n.nav-item:focus-visible {\n  outline: 2px solid var(--color-primary, #6366f1);\n  outline-offset: -2px;\n}\n.nav-item:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text, #2e3346);\n}\n\n.nav-item.active {\n  background: var(--color-bg-active, #eff0fe);\n  color: var(--color-primary, #6366f1);\n}\n\n.nav-item.step.active { background: transparent; }\n\n.nav-item .label {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.nav-children {\n  border-inline-start: 1px solid var(--color-border, #e5e5e5);\n  margin-inline-start: 0.625rem;\n  overflow: hidden;\n  padding-inline-start: 0.625rem;\n}\n\n.nav-children.collapsed { display: none; }\n\n.step-badge {\n  color: var(--color-text-subtle, #9ca3af);\n  flex-shrink: 0;\n  font-size: 0.625rem;\n  margin-inline-start: auto;\n}\n\n.sidebar-footer {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border-block-start: 1px solid var(--color-border, #e5e5e5);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  display: flex;\n  gap: 0.5rem;\n  grid-area: sidebar-footer;\n  justify-content: space-between;\n  padding: 0.75rem 1rem;\n}\n\n.zoom-controls {\n  align-items: center;\n  display: flex;\n  gap: 0.125rem;\n}\n\n.zoom-btn {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text-light, #6b7280);\n  cursor: pointer;\n  display: flex;\n  font-size: 0.875rem;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.zoom-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: #d1d5db;\n  color: var(--color-text, #2e3346);\n}\n\n.zoom-level {\n  color: var(--color-text-light, #6b7280);\n  font-size: 0.6875rem;\n  min-width: 2.5rem;\n  padding-inline: 0.375rem;\n  text-align: center;\n}\n\n.attribution {\n  color: var(--color-text-subtle, #9ca3af);\n  font-size: 0.6875rem;\n}\n\n.attribution a {\n  color: var(--color-text-subtle, #9ca3af);\n  text-decoration: none;\n}\n\n.attribution a:hover { color: var(--color-primary, #6366f1); }\n\n.help-btn {\n  align-items: center;\n  background: transparent;\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 50%;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  font-size: 0.625rem;\n  font-weight: 600;\n  height: 1rem;\n  justify-content: center;\n  margin-inline-start: 0.25rem;\n  transition: all 150ms;\n  width: 1rem;\n}\n\n.help-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: var(--color-primary, #6366f1);\n  color: var(--color-primary, #6366f1);\n}\n";
+var diagram_nav_tree_default = ":host {\n  display: contents;\n}\n\n.sidebar-header {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border-block-end: 1px solid var(--color-border, #e5e5e5);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  display: flex;\n  gap: 0.625rem;\n  grid-area: sidebar-header;\n  height: 3rem;\n  padding: 0.75rem 1rem;\n}\n\n.sidebar-header svg {\n  color: var(--color-primary, #6366f1);\n  flex-shrink: 0;\n  height: 1.25rem;\n  width: 1.25rem;\n}\n\n.sidebar-header h1 {\n  color: var(--color-text, #2e3346);\n  flex: 1;\n  font-size: 0.875rem;\n  font-weight: 600;\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.sidebar-collapse-btn {\n  align-items: center;\n  background: transparent;\n  border: none;\n  border-radius: 0.25rem;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.sidebar-collapse-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text-light, #6b7280);\n}\n\n.sidebar-collapse-btn svg {\n  color: inherit;\n  height: 0.875rem;\n  width: 0.875rem;\n}\n\n.nav-tree {\n  background: var(--color-bg, #fff);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  grid-area: sidebar-nav;\n  overflow-y: auto;\n  padding: 0.25rem 0.5rem;\n}\n\n.nav-group { margin: 0; }\n\n.nav-row {\n  align-items: center;\n  display: flex;\n  gap: 0;\n}\n\n.nav-toggle {\n  align-items: center;\n  background: transparent;\n  border: none;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  flex-shrink: 0;\n  height: 1.5rem;\n  justify-content: center;\n  padding: 0;\n  width: 1.25rem;\n}\n\n.nav-toggle:hover { color: var(--color-text-light, #6b7280); }\n\n.nav-toggle svg {\n  height: 0.625rem;\n  transition: transform 150ms;\n  width: 0.625rem;\n}\n\n.nav-toggle.collapsed svg { transform: rotate(-90deg); }\n.nav-toggle.no-children { visibility: hidden; }\n\n.step-bullet {\n  align-items: center;\n  background: transparent;\n  border: none;\n  color: transparent;\n  display: flex;\n  flex-shrink: 0;\n  font-size: 0.375rem;\n  height: 1.5rem;\n  justify-content: center;\n  padding: 0;\n  width: 1.25rem;\n}\n\n.step-bullet.active { color: var(--color-primary, #6366f1); }\n\n.nav-item {\n  align-items: center;\n  border-radius: 0.25rem;\n  color: var(--color-text-muted, #5c5f77);\n  cursor: pointer;\n  display: flex;\n  flex: 1;\n  font-size: 0.8125rem;\n  gap: 0.375rem;\n  min-width: 0;\n  padding: 0.375rem 0.5rem;\n  text-decoration: none;\n}\n\n.nav-item:focus {\n  outline: none;\n}\n.nav-item:focus-visible {\n  outline: 2px solid var(--color-primary, #6366f1);\n  outline-offset: -2px;\n}\n.nav-item:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text, #2e3346);\n}\n\n.nav-item.active {\n  background: var(--color-bg-active, #eff0fe);\n  color: var(--color-primary, #6366f1);\n}\n\n.nav-item.step.active { background: transparent; }\n\n.nav-item .label {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  white-space: nowrap;\n}\n\n.nav-children {\n  border-inline-start: 1px solid var(--color-border, #e5e5e5);\n  margin-inline-start: 0.625rem;\n  overflow: hidden;\n  padding-inline-start: 0.625rem;\n}\n\n.nav-children.collapsed { display: none; }\n\n.step-badge {\n  color: var(--color-text-subtle, #9ca3af);\n  flex-shrink: 0;\n  font-size: 0.625rem;\n  margin-inline-start: auto;\n}\n\n.sidebar-footer {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border-block-start: 1px solid var(--color-border, #e5e5e5);\n  border-inline-end: 1px solid var(--color-border, #e5e5e5);\n  display: flex;\n  gap: 0.5rem;\n  grid-area: sidebar-footer;\n  justify-content: space-between;\n  padding: 0.75rem 1rem;\n}\n\n.zoom-controls {\n  align-items: center;\n  display: flex;\n  gap: 0.125rem;\n}\n\n.zoom-btn {\n  align-items: center;\n  background: var(--color-bg, #fff);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text-light, #6b7280);\n  cursor: pointer;\n  display: flex;\n  font-size: 0.875rem;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.zoom-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: #d1d5db;\n  color: var(--color-text, #2e3346);\n}\n\n.zoom-level {\n  color: var(--color-text-light, #6b7280);\n  font-size: 0.6875rem;\n  min-width: 2.5rem;\n  padding-inline: 0.375rem;\n  text-align: center;\n}\n\n.attribution {\n  color: var(--color-text-subtle, #9ca3af);\n  font-size: 0.6875rem;\n}\n\n.attribution a {\n  color: var(--color-text-subtle, #9ca3af);\n  text-decoration: none;\n}\n\n.attribution a:hover { color: var(--color-primary, #6366f1); }\n\n.help-btn {\n  align-items: center;\n  background: transparent;\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 50%;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  font-size: 0.625rem;\n  font-weight: 600;\n  height: 1rem;\n  justify-content: center;\n  margin-inline-start: 0.25rem;\n  transition: all 150ms;\n  width: 1rem;\n}\n\n.help-btn:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  border-color: var(--color-primary, #6366f1);\n  color: var(--color-primary, #6366f1);\n}\n";
 
 // src/diagram-nav-tree.js
 var _sharedSheet3 = null;
@@ -529,35 +474,20 @@ var DiagramNavTree = class extends HTMLElement {
     this.#navTreeEl = this.shadowRoot.querySelector(".nav-tree");
     this.#titleEl = this.shadowRoot.querySelector(".title");
     this.#zoomLevelEl = this.shadowRoot.querySelector(".zoom-level");
-    this.shadowRoot
-      .querySelector(".sidebar-collapse-btn")
-      .addEventListener("click", () => {
-        this.dispatchEvent(
-          new CustomEvent("sidebar-collapse", {
-            bubbles: true,
-            composed: true,
-          }),
-        );
-      });
+    this.shadowRoot.querySelector(".sidebar-collapse-btn").addEventListener("click", () => {
+      this.dispatchEvent(new CustomEvent("sidebar-collapse", { bubbles: true, composed: true }));
+    });
     this.shadowRoot.querySelector(".zoom-in").addEventListener("click", () => {
-      this.dispatchEvent(
-        new CustomEvent("zoom-in", { bubbles: true, composed: true }),
-      );
+      this.dispatchEvent(new CustomEvent("zoom-in", { bubbles: true, composed: true }));
     });
     this.shadowRoot.querySelector(".zoom-out").addEventListener("click", () => {
-      this.dispatchEvent(
-        new CustomEvent("zoom-out", { bubbles: true, composed: true }),
-      );
+      this.dispatchEvent(new CustomEvent("zoom-out", { bubbles: true, composed: true }));
     });
     this.shadowRoot.querySelector(".zoom-fit").addEventListener("click", () => {
-      this.dispatchEvent(
-        new CustomEvent("zoom-reset", { bubbles: true, composed: true }),
-      );
+      this.dispatchEvent(new CustomEvent("zoom-reset", { bubbles: true, composed: true }));
     });
     this.shadowRoot.querySelector(".help-btn").addEventListener("click", () => {
-      this.dispatchEvent(
-        new CustomEvent("help-open", { bubbles: true, composed: true }),
-      );
+      this.dispatchEvent(new CustomEvent("help-open", { bubbles: true, composed: true }));
     });
   }
   // ─── Public API ─────────────────────────────────────────────────────────
@@ -594,9 +524,7 @@ var DiagramNavTree = class extends HTMLElement {
     group.className = "nav-group";
     const row = document.createElement("div");
     row.className = "nav-row";
-    const hasChildren =
-      item.children?.length > 0 ||
-      (item.type === "steps" && item.steps?.length > 0);
+    const hasChildren = item.children?.length > 0 || item.type === "steps" && item.steps?.length > 0;
     if (item.type === "step") {
       const bullet = document.createElement("span");
       bullet.className = "step-bullet";
@@ -606,16 +534,14 @@ var DiagramNavTree = class extends HTMLElement {
     } else {
       const toggle = document.createElement("button");
       toggle.className = `nav-toggle${hasChildren ? "" : " no-children"}`;
-      toggle.innerHTML =
-        '<svg viewBox="0 0 10 10" fill="currentColor"><path d="M2 3l3 3.5L8 3z"/></svg>';
+      toggle.innerHTML = '<svg viewBox="0 0 10 10" fill="currentColor"><path d="M2 3l3 3.5L8 3z"/></svg>';
       toggle.setAttribute("aria-label", "Toggle");
       row.appendChild(toggle);
       if (hasChildren) {
         toggle.addEventListener("click", (e) => {
           e.stopPropagation();
           toggle.classList.toggle("collapsed");
-          const childContainer =
-            row.parentElement?.querySelector(".nav-children");
+          const childContainer = row.parentElement?.querySelector(".nav-children");
           childContainer?.classList.toggle("collapsed");
         });
       }
@@ -636,13 +562,11 @@ var DiagramNavTree = class extends HTMLElement {
     }
     link.addEventListener("click", (e) => {
       e.preventDefault();
-      this.dispatchEvent(
-        new CustomEvent("slide-select", {
-          detail: { id: item.id },
-          bubbles: true,
-          composed: true,
-        }),
-      );
+      this.dispatchEvent(new CustomEvent("slide-select", {
+        detail: { id: item.id },
+        bubbles: true,
+        composed: true
+      }));
     });
     row.appendChild(link);
     group.appendChild(row);
@@ -656,15 +580,12 @@ var DiagramNavTree = class extends HTMLElement {
       }
       if (item.type === "steps" && item.steps) {
         for (const step of item.steps) {
-          this.#createNavItem(
-            {
-              id: `${item.id}-step-${step.step}`,
-              title: step.title,
-              path: step.path,
-              type: "step",
-            },
-            childContainer,
-          );
+          this.#createNavItem({
+            id: `${item.id}-step-${step.step}`,
+            title: step.title,
+            path: step.path,
+            type: "step"
+          }, childContainer);
         }
       }
       group.appendChild(childContainer);
@@ -677,24 +598,18 @@ var DiagramNavTree = class extends HTMLElement {
       item.classList.toggle("active", item.dataset.id === this.#activeSlideId);
     }
     for (const bullet of this.shadowRoot.querySelectorAll(".step-bullet")) {
-      bullet.classList.toggle(
-        "active",
-        bullet.dataset.id === this.#activeSlideId,
-      );
+      bullet.classList.toggle("active", bullet.dataset.id === this.#activeSlideId);
     }
   }
 };
 if (!customElements.get("diagram-nav-tree")) {
   customElements.define("diagram-nav-tree", DiagramNavTree);
 } else if (customElements.get("diagram-nav-tree") !== DiagramNavTree) {
-  console.warn(
-    '[diagram-nav-tree] A different constructor is already registered under "diagram-nav-tree". Skipping re-definition.',
-  );
+  console.warn('[diagram-nav-tree] A different constructor is already registered under "diagram-nav-tree". Skipping re-definition.');
 }
 
 // src/diagram-help-modal.css
-var diagram_help_modal_default =
-  ":host {\n  display: contents;\n}\n\n.help-modal-backdrop {\n  align-items: center;\n  background: rgb(0 0 0 / 50%);\n  display: none;\n  inset: 0;\n  justify-content: center;\n  position: absolute;\n  z-index: 2000;\n}\n\n.help-modal-backdrop.open {\n  display: flex;\n}\n\n.help-modal {\n  background: var(--color-bg, #fff);\n  border-radius: 0.5rem;\n  box-shadow: 0 0.5rem 2rem rgb(0 0 0 / 20%);\n  max-height: 90%;\n  max-width: 28rem;\n  overflow: auto;\n  padding: 1.5rem;\n  width: 90%;\n}\n\n.help-modal-header {\n  align-items: center;\n  display: flex;\n  justify-content: space-between;\n  margin-block-end: 1rem;\n}\n\n.help-modal-header h2 {\n  color: var(--color-text, #2e3346);\n  font-size: 1rem;\n  font-weight: 600;\n  margin: 0;\n}\n\n.help-modal-close {\n  align-items: center;\n  background: transparent;\n  border: none;\n  border-radius: 0.25rem;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.help-modal-close:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text, #2e3346);\n}\n\n.help-modal-section {\n  margin-block-end: 1rem;\n}\n\n.help-modal-section:last-child {\n  margin-block-end: 0;\n}\n\n.help-modal-section h3 {\n  color: var(--color-text-muted, #5c5f77);\n  font-size: 0.6875rem;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  margin-block-end: 0.5rem;\n  text-transform: uppercase;\n}\n\n.help-modal-row {\n  align-items: center;\n  display: flex;\n  gap: 0.75rem;\n  padding: 0.375rem 0;\n}\n\n.help-modal-keys {\n  display: flex;\n  flex-shrink: 0;\n  gap: 0.25rem;\n  min-width: 5rem;\n}\n\nkbd {\n  background: var(--color-bg-hover, #f3f4f6);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text, #2e3346);\n  font-family: inherit;\n  font-size: 0.6875rem;\n  padding: 0.125rem 0.375rem;\n}\n\n.help-modal-desc {\n  color: var(--color-text-muted, #5c5f77);\n  font-size: 0.8125rem;\n}\n";
+var diagram_help_modal_default = ":host {\n  display: contents;\n}\n\n.help-modal-backdrop {\n  align-items: center;\n  background: rgb(0 0 0 / 50%);\n  display: none;\n  inset: 0;\n  justify-content: center;\n  position: absolute;\n  z-index: 2000;\n}\n\n.help-modal-backdrop.open {\n  display: flex;\n}\n\n.help-modal {\n  background: var(--color-bg, #fff);\n  border-radius: 0.5rem;\n  box-shadow: 0 0.5rem 2rem rgb(0 0 0 / 20%);\n  max-height: 90%;\n  max-width: 28rem;\n  overflow: auto;\n  padding: 1.5rem;\n  width: 90%;\n}\n\n.help-modal-header {\n  align-items: center;\n  display: flex;\n  justify-content: space-between;\n  margin-block-end: 1rem;\n}\n\n.help-modal-header h2 {\n  color: var(--color-text, #2e3346);\n  font-size: 1rem;\n  font-weight: 600;\n  margin: 0;\n}\n\n.help-modal-close {\n  align-items: center;\n  background: transparent;\n  border: none;\n  border-radius: 0.25rem;\n  color: var(--color-text-subtle, #9ca3af);\n  cursor: pointer;\n  display: flex;\n  height: 1.5rem;\n  justify-content: center;\n  transition: all 150ms;\n  width: 1.5rem;\n}\n\n.help-modal-close:hover {\n  background: var(--color-bg-hover, #f3f4f6);\n  color: var(--color-text, #2e3346);\n}\n\n.help-modal-section {\n  margin-block-end: 1rem;\n}\n\n.help-modal-section:last-child {\n  margin-block-end: 0;\n}\n\n.help-modal-section h3 {\n  color: var(--color-text-muted, #5c5f77);\n  font-size: 0.6875rem;\n  font-weight: 600;\n  letter-spacing: 0.05em;\n  margin-block-end: 0.5rem;\n  text-transform: uppercase;\n}\n\n.help-modal-row {\n  align-items: center;\n  display: flex;\n  gap: 0.75rem;\n  padding: 0.375rem 0;\n}\n\n.help-modal-keys {\n  display: flex;\n  flex-shrink: 0;\n  gap: 0.25rem;\n  min-width: 5rem;\n}\n\nkbd {\n  background: var(--color-bg-hover, #f3f4f6);\n  border: 1px solid var(--color-border, #e5e5e5);\n  border-radius: 0.25rem;\n  color: var(--color-text, #2e3346);\n  font-family: inherit;\n  font-size: 0.6875rem;\n  padding: 0.125rem 0.375rem;\n}\n\n.help-modal-desc {\n  color: var(--color-text-muted, #5c5f77);\n  font-size: 0.8125rem;\n}\n";
 
 // src/diagram-help-modal.js
 var _sharedSheet4 = null;
@@ -777,9 +692,7 @@ var DiagramHelpModal = class extends HTMLElement {
       </div>
     `;
     this.#backdrop = this.shadowRoot.querySelector(".help-modal-backdrop");
-    this.shadowRoot
-      .querySelector(".help-modal-close")
-      .addEventListener("click", () => this.close());
+    this.shadowRoot.querySelector(".help-modal-close").addEventListener("click", () => this.close());
     this.#backdrop.addEventListener("click", (e) => {
       if (e.target === this.#backdrop) this.close();
     });
@@ -800,9 +713,7 @@ var DiagramHelpModal = class extends HTMLElement {
 if (!customElements.get("diagram-help-modal")) {
   customElements.define("diagram-help-modal", DiagramHelpModal);
 } else if (customElements.get("diagram-help-modal") !== DiagramHelpModal) {
-  console.warn(
-    '[diagram-help-modal] A different constructor is already registered under "diagram-help-modal". Skipping re-definition.',
-  );
+  console.warn('[diagram-help-modal] A different constructor is already registered under "diagram-help-modal". Skipping re-definition.');
 }
 
 // src/diagram-viewer.css
@@ -1088,12 +999,13 @@ var DiagramViewer = class extends HTMLElement {
     "zoom",
     "start-at",
     "bookmarkable",
-    "primary",
+    "primary"
   ];
   // State
   #instanceId = "";
   #manifest = null;
   #basePath = "";
+  #resolvedBaseUrl = null;
   #flatSlides = [];
   #currentIndex = 0;
   #zoomLevel = 1.5;
@@ -1161,7 +1073,7 @@ var DiagramViewer = class extends HTMLElement {
     const hasPrimary = [...all].some((el) => el.hasAttribute("primary"));
     if (!hasPrimary) {
       console.warn(
-        '[diagram-viewer] Multiple bookmarkable viewers exist but none has the "primary" attribute. No viewer will own the URL hash. Add primary to one instance.',
+        '[diagram-viewer] Multiple bookmarkable viewers exist but none has the "primary" attribute. No viewer will own the URL hash. Add primary to one instance.'
       );
     }
     return false;
@@ -1177,7 +1089,7 @@ var DiagramViewer = class extends HTMLElement {
     if (this.#ownsHash()) {
       this.#hashChangeController = new AbortController();
       globalThis.addEventListener("hashchange", () => this.#loadFromHash(), {
-        signal: this.#hashChangeController.signal,
+        signal: this.#hashChangeController.signal
       });
     }
   }
@@ -1196,7 +1108,8 @@ var DiagramViewer = class extends HTMLElement {
       if (document.querySelectorAll("diagram-viewer").length > 1) return;
       localStorage.setItem(namespacedKey, legacyRaw);
       localStorage.removeItem(legacyKey);
-    } catch {}
+    } catch {
+    }
   }
   disconnectedCallback() {
     clearTimeout(this.#persistTimer);
@@ -1207,11 +1120,14 @@ var DiagramViewer = class extends HTMLElement {
   }
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue === newValue) return;
-    if (name === "base-path") this.#basePath = newValue ?? "";
+    if (name === "base-path") {
+      this.#basePath = newValue ?? "";
+      this.#resolvedBaseUrl = null;
+    }
     if (name === "sidebar" && this.#container) {
       this.#container.classList.toggle(
         "sidebar-collapsed",
-        newValue === "false",
+        newValue === "false"
       );
     }
     if (name === "zoom" && this.#canvas) {
@@ -1234,25 +1150,50 @@ var DiagramViewer = class extends HTMLElement {
     this.#clearManifestError();
     if (!data || typeof data !== "object" || !Array.isArray(data.layers)) {
       throw new Error(
-        'loadData: invalid manifest \u2014 expected v0 shape with a "layers" array. Required: { layers: [{ id, title, path, type }] }',
+        'loadData: invalid manifest \u2014 expected v0 shape with a "layers" array. Required: { layers: [{ id, title, path, type }] }'
       );
     }
     for (let i = 0; i < data.layers.length; i++) {
       const l = data.layers[i];
-      if (
-        !l ||
-        typeof l.id !== "string" ||
-        typeof l.title !== "string" ||
-        typeof l.path !== "string" ||
-        typeof l.type !== "string"
-      ) {
+      if (!l || typeof l.id !== "string" || typeof l.title !== "string" || typeof l.path !== "string" || typeof l.type !== "string") {
         throw new Error(
-          `loadData: layers[${i}] is invalid \u2014 each layer must have string id, title, path, and type.`,
+          `loadData: layers[${i}] is invalid \u2014 each layer must have string id, title, path, and type.`
         );
       }
     }
+    const pctRe = /%[0-9A-Fa-f]{2}/;
+    const validateNoPct = (items, breadcrumb) => {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const label = `${breadcrumb}[${i}] (id="${item.id}")`;
+        if (pctRe.test(item.path)) {
+          throw new Error(
+            `loadData: ${label}.path contains percent-encoding \u2014 manifest paths must be raw/unencoded \u2014 use a literal space, not %20`
+          );
+        }
+        if (item.overlay && pctRe.test(item.overlay)) {
+          throw new Error(
+            `loadData: ${label}.overlay contains percent-encoding \u2014 manifest paths must be raw/unencoded \u2014 use a literal space, not %20`
+          );
+        }
+        if (item.steps) {
+          for (let s = 0; s < item.steps.length; s++) {
+            if (pctRe.test(item.steps[s].path)) {
+              throw new Error(
+                `loadData: ${label}.steps[${s}].path contains percent-encoding \u2014 manifest paths must be raw/unencoded \u2014 use a literal space, not %20`
+              );
+            }
+          }
+        }
+        if (item.children) {
+          validateNoPct(item.children, `${label}.children`);
+        }
+      }
+    };
+    validateNoPct(data.layers, "layers");
     this.#sourceData = data;
     this.#basePath = this.getAttribute("base-path") || "";
+    this.#resolvedBaseUrl = null;
     let preservedUi = null;
     try {
       const raw = localStorage.getItem(this.#storageKey());
@@ -1262,7 +1203,8 @@ var DiagramViewer = class extends HTMLElement {
           preservedUi = snapshot.ui;
         }
       }
-    } catch {}
+    } catch {
+    }
     this.#manifest = data;
     this.#navTree.title = data.name ?? "Diagram";
     this.#buildFlatSlideList();
@@ -1278,21 +1220,14 @@ var DiagramViewer = class extends HTMLElement {
       } else {
         this.#container.classList.remove("sidebar-collapsed");
       }
-      if (
-        typeof preservedUi.sidebarWidthPx === "number" &&
-        preservedUi.sidebarOpen !== false
-      ) {
+      if (typeof preservedUi.sidebarWidthPx === "number" && preservedUi.sidebarOpen !== false) {
         this.#container.style.gridTemplateColumns = `${preservedUi.sidebarWidthPx}px auto 1fr`;
       }
       const hash = this.#ownsHash() ? location.hash.slice(1) : "";
       let slideId = hash || preservedUi.currentSlideId;
-      const slideExists =
-        slideId && this.#flatSlides.some((s) => s.id === slideId);
+      const slideExists = slideId && this.#flatSlides.some((s) => s.id === slideId);
       if (!slideExists) {
-        slideId =
-          this.getAttribute("start-at") ||
-          this.#flatSlides[0]?.id ||
-          "overview";
+        slideId = this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
       }
       this.#navigateToId(slideId, "replace");
     } else {
@@ -1310,7 +1245,8 @@ var DiagramViewer = class extends HTMLElement {
     const resolved = new URL(url, document.baseURI).href;
     try {
       localStorage.removeItem(this.#storageKey());
-    } catch {}
+    } catch {
+    }
     let basePath;
     if (resolved.endsWith("/")) {
       basePath = resolved;
@@ -1320,6 +1256,7 @@ var DiagramViewer = class extends HTMLElement {
     this.setAttribute("base-path", basePath);
     this.setAttribute("manifest", resolved);
     this.#basePath = basePath;
+    this.#resolvedBaseUrl = null;
     try {
       const response = await fetch(resolved);
       if (!response.ok)
@@ -1347,7 +1284,8 @@ var DiagramViewer = class extends HTMLElement {
   reset() {
     try {
       localStorage.removeItem(this.#storageKey());
-    } catch {}
+    } catch {
+    }
     this.#manifest = null;
     this.#flatSlides = [];
     this.#currentIndex = 0;
@@ -1382,6 +1320,7 @@ var DiagramViewer = class extends HTMLElement {
       this.#sourceData = snapshot.manifest;
       this.#manifest = snapshot.manifest;
       this.#basePath = snapshot.basePath ?? "";
+      this.#resolvedBaseUrl = null;
       this.#navTree.title = this.#manifest.name ?? "Diagram";
       this.#buildFlatSlideList();
       this.#navTree.buildTree(this.#manifest, this.#basePath);
@@ -1400,12 +1339,7 @@ var DiagramViewer = class extends HTMLElement {
         this.#container.style.gridTemplateColumns = `${ui.sidebarWidthPx}px auto 1fr`;
       }
       const hash = this.#ownsHash() ? location.hash.slice(1) : "";
-      const slideId =
-        hash ||
-        ui.currentSlideId ||
-        this.getAttribute("start-at") ||
-        this.#flatSlides[0]?.id ||
-        "overview";
+      const slideId = hash || ui.currentSlideId || this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
       this.#navigateToId(slideId, "replace");
       return true;
     } catch {
@@ -1419,8 +1353,7 @@ var DiagramViewer = class extends HTMLElement {
     clearTimeout(this.#persistTimer);
     this.#persistTimer = setTimeout(() => {
       try {
-        const sidebarOpen =
-          !this.#container.classList.contains("sidebar-collapsed");
+        const sidebarOpen = !this.#container.classList.contains("sidebar-collapsed");
         const currentSlide = this.#flatSlides[this.#currentIndex];
         let sidebarWidthPx = null;
         const cols = this.#container.style.gridTemplateColumns;
@@ -1436,11 +1369,12 @@ var DiagramViewer = class extends HTMLElement {
             currentSlideId: currentSlide?.id ?? null,
             zoomPercent: Math.round(this.#zoomLevel * 100),
             sidebarOpen,
-            sidebarWidthPx,
-          },
+            sidebarWidthPx
+          }
         };
         localStorage.setItem(this.#storageKey(), JSON.stringify(snapshot));
-      } catch {}
+      } catch {
+      }
     }, PERSIST_DELAY);
   }
   #render() {
@@ -1504,7 +1438,7 @@ var DiagramViewer = class extends HTMLElement {
         this.#container.classList.remove("sidebar-collapsed");
         this.#persist();
       },
-      { signal },
+      { signal }
     );
     this.#navTree.addEventListener(
       "slide-select",
@@ -1514,7 +1448,7 @@ var DiagramViewer = class extends HTMLElement {
         this.#navigateToId(e.detail.id, "replace");
         this.focus({ preventScroll: true });
       },
-      { signal },
+      { signal }
     );
     this.#navTree.addEventListener(
       "sidebar-collapse",
@@ -1523,26 +1457,26 @@ var DiagramViewer = class extends HTMLElement {
         this.#container.style.gridTemplateColumns = "";
         this.#persist();
       },
-      { signal },
+      { signal }
     );
     this.#navTree.addEventListener("zoom-in", () => this.#zoomIn(), { signal });
     this.#navTree.addEventListener("zoom-out", () => this.#zoomOut(), {
-      signal,
+      signal
     });
     this.#navTree.addEventListener("zoom-reset", () => this.#zoomReset(), {
-      signal,
+      signal
     });
     this.#navTree.addEventListener(
       "help-open",
       () => this.#helpModal.toggle(),
-      { signal },
+      { signal }
     );
     this.#canvas.addEventListener(
       "slide-navigate",
       (e) => {
         this.#navigateToId(e.detail.id, "push");
       },
-      { signal },
+      { signal }
     );
     this.#canvas.addEventListener(
       "zoom-change",
@@ -1551,19 +1485,19 @@ var DiagramViewer = class extends HTMLElement {
         this.#navTree.zoomPercent = e.detail.zoomPercent;
         this.#persist();
       },
-      { signal },
+      { signal }
     );
     this.#canvas.addEventListener(
       "iframe-keydown",
       (e) => {
         this.#handleKeyDown(e.detail);
       },
-      { signal },
+      { signal }
     );
     this.#initResizeHandle(signal);
     this.addEventListener("keydown", (e) => this.#handleKeyDown(e), {
       signal,
-      capture: true,
+      capture: true
     });
     this.#initJsonDialog(signal);
   }
@@ -1588,7 +1522,7 @@ var DiagramViewer = class extends HTMLElement {
           copiedEl.textContent = "";
         }, 1500);
       },
-      { signal },
+      { signal }
     );
     $(".json-apply").addEventListener(
       "click",
@@ -1608,30 +1542,30 @@ var DiagramViewer = class extends HTMLElement {
         }
         try {
           localStorage.setItem(this.#storageKey(), JSON.stringify(parsed));
-        } catch {}
+        } catch {
+        }
         this.#applySnapshot(parsed);
         backdrop.classList.remove("open");
       },
-      { signal },
+      { signal }
     );
     $(".json-close").addEventListener(
       "click",
       () => {
         backdrop.classList.remove("open");
       },
-      { signal },
+      { signal }
     );
     backdrop.addEventListener(
       "click",
       (e) => {
         if (e.target === backdrop) backdrop.classList.remove("open");
       },
-      { signal },
+      { signal }
     );
   }
   #getSnapshot() {
-    const sidebarOpen =
-      !this.#container.classList.contains("sidebar-collapsed");
+    const sidebarOpen = !this.#container.classList.contains("sidebar-collapsed");
     const currentSlide = this.#flatSlides[this.#currentIndex];
     let sidebarWidthPx = null;
     const cols = this.#container.style.gridTemplateColumns;
@@ -1647,14 +1581,15 @@ var DiagramViewer = class extends HTMLElement {
         currentSlideId: currentSlide?.id ?? null,
         zoomPercent: Math.round(this.#zoomLevel * 100),
         sidebarOpen,
-        sidebarWidthPx,
-      },
+        sidebarWidthPx
+      }
     };
   }
   #applySnapshot(snapshot) {
     this.#sourceData = snapshot.manifest;
     this.#manifest = snapshot.manifest;
     this.#basePath = snapshot.basePath ?? "";
+    this.#resolvedBaseUrl = null;
     this.#navTree.title = this.#manifest.name ?? "Diagram";
     this.#buildFlatSlideList();
     this.#navTree.buildTree(this.#manifest, this.#basePath);
@@ -1678,8 +1613,7 @@ var DiagramViewer = class extends HTMLElement {
     this.#navigateToId(slideId, "replace");
   }
   #initResizeHandle(signal) {
-    const remToPx =
-      parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+    const remToPx = parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
     const MIN_WIDTH = 10 * remToPx;
     const MAX_WIDTH = 30 * remToPx;
     let startX = 0;
@@ -1689,7 +1623,7 @@ var DiagramViewer = class extends HTMLElement {
       const delta = e.clientX - startX;
       const newWidth = Math.max(
         MIN_WIDTH,
-        Math.min(MAX_WIDTH, startWidth + delta),
+        Math.min(MAX_WIDTH, startWidth + delta)
       );
       this.#container.style.gridTemplateColumns = `${newWidth}px auto 1fr`;
     };
@@ -1711,15 +1645,13 @@ var DiagramViewer = class extends HTMLElement {
         this.#canvas.setResizing(true);
         e.preventDefault();
         dragController = new AbortController();
-        const dragSignal = AbortSignal.any
-          ? AbortSignal.any([dragController.signal, signal])
-          : dragController.signal;
+        const dragSignal = AbortSignal.any ? AbortSignal.any([dragController.signal, signal]) : dragController.signal;
         document.addEventListener("mousemove", onMouseMove, {
-          signal: dragSignal,
+          signal: dragSignal
         });
         document.addEventListener("mouseup", onMouseUp, { signal: dragSignal });
       },
-      { signal },
+      { signal }
     );
     signal.addEventListener("abort", () => {
       dragController?.abort();
@@ -1729,6 +1661,7 @@ var DiagramViewer = class extends HTMLElement {
   async #loadManifest() {
     const manifestPath = this.getAttribute("manifest");
     this.#basePath = this.getAttribute("base-path") ?? "";
+    this.#resolvedBaseUrl = null;
     if (!manifestPath) return;
     try {
       const response = await fetch(manifestPath);
@@ -1742,9 +1675,7 @@ var DiagramViewer = class extends HTMLElement {
     }
   }
   #clearManifestError() {
-    this.#container
-      .querySelectorAll(":scope > .error")
-      .forEach((el) => el.remove());
+    this.#container.querySelectorAll(":scope > .error").forEach((el) => el.remove());
     if (this.#canvas.style.display === "none") {
       this.#canvas.style.display = "";
     }
@@ -1755,8 +1686,7 @@ var DiagramViewer = class extends HTMLElement {
     this.#container.classList.add("sidebar-collapsed");
     const errorEl = document.createElement("div");
     errorEl.className = "error";
-    errorEl.style.cssText =
-      "flex-direction: column; gap: 12px; text-align: center; padding: 24px;";
+    errorEl.style.cssText = "flex-direction: column; gap: 12px; text-align: center; padding: 24px;";
     errorEl.innerHTML = `
       <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color: var(--color-error);">
         <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
@@ -1770,25 +1700,39 @@ var DiagramViewer = class extends HTMLElement {
     this.#canvas.style.display = "none";
     this.#container.appendChild(errorEl);
   }
+  #resolvedBase() {
+    if (!this.#resolvedBaseUrl) {
+      if (!this.#basePath) {
+        this.#resolvedBaseUrl = document.baseURI;
+      } else {
+        const base = this.#basePath.endsWith("/") ? this.#basePath : this.#basePath + "/";
+        this.#resolvedBaseUrl = new URL(base, document.baseURI).href;
+      }
+    }
+    return this.#resolvedBaseUrl;
+  }
+  #resolveSlideUrl(relativePath) {
+    return new URL(relativePath, this.#resolvedBase()).href;
+  }
   #buildFlatSlideList() {
     this.#flatSlides = [];
     const processItem = (item, parentId = null) => {
       this.#flatSlides.push({
         id: item.id,
         title: item.title,
-        path: `${this.#basePath}/${item.path}`,
+        path: this.#resolveSlideUrl(item.path),
         type: item.type,
         parentId,
-        overlay: item.overlay ? `${this.#basePath}/${item.overlay}` : null,
+        overlay: item.overlay ? this.#resolveSlideUrl(item.overlay) : null
       });
       if (item.type === "steps" && item.steps) {
         for (const step of item.steps) {
           this.#flatSlides.push({
             id: `${item.id}-step-${step.step}`,
             title: `${item.title} - ${step.title}`,
-            path: `${this.#basePath}/${step.path}`,
+            path: this.#resolveSlideUrl(step.path),
             type: "step",
-            parentId: item.id,
+            parentId: item.id
           });
         }
       }
@@ -1821,8 +1765,8 @@ var DiagramViewer = class extends HTMLElement {
     this.dispatchEvent(
       new CustomEvent("slide-change", {
         detail: { slide, index },
-        bubbles: true,
-      }),
+        bubbles: true
+      })
     );
     this.#persist();
   }
@@ -1832,8 +1776,7 @@ var DiagramViewer = class extends HTMLElement {
   }
   #loadFromHash() {
     if (!this.#ownsHash()) return;
-    const startAttr =
-      this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
+    const startAttr = this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
     const hash = location.hash.slice(1) || startAttr;
     this.#navigateToId(hash, "replace");
   }
@@ -1844,8 +1787,7 @@ var DiagramViewer = class extends HTMLElement {
     if (this.#ownsHash() && location.hash.length > 1) {
       this.#navigateToId(location.hash.slice(1), "replace");
     } else {
-      const slideId =
-        this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
+      const slideId = this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
       this.#navigateToId(slideId, "replace");
     }
   }
@@ -1884,10 +1826,7 @@ var DiagramViewer = class extends HTMLElement {
     }
   }
   #handleKeyDown(e) {
-    if (
-      e.key !== "Escape" &&
-      (e.target?.tagName === "INPUT" || e.target?.tagName === "TEXTAREA")
-    )
+    if (e.key !== "Escape" && (e.target?.tagName === "INPUT" || e.target?.tagName === "TEXTAREA"))
       return;
     if (e.key === "Escape") {
       e.preventDefault?.();
@@ -1952,7 +1891,9 @@ if (!customElements.get("diagram-viewer")) {
   customElements.define("diagram-viewer", DiagramViewer);
 } else if (customElements.get("diagram-viewer") !== DiagramViewer) {
   console.warn(
-    '[diagram-viewer] A different constructor is already registered under "diagram-viewer". Skipping re-definition.',
+    '[diagram-viewer] A different constructor is already registered under "diagram-viewer". Skipping re-definition.'
   );
 }
-export { DiagramViewer };
+export {
+  DiagramViewer
+};
