@@ -380,19 +380,19 @@ func TestViewer_LoadDataRejectsPercentEncodedPaths(t *testing.T) {
 	}{
 		{
 			"path with %20",
-			`{layers:[{id:"a",title:"A",path:"foo%20bar.svg",type:"layer"}]}`,
+			`{"layers":[{"id":"a","title":"A","path":"foo%20bar.svg","type":"layer"}]}`,
 		},
 		{
 			"overlay with %2F",
-			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"layer",overlay:"over%2Flay.svg"}]}`,
+			`{"layers":[{"id":"a","title":"A","path":"ok.svg","type":"layer","overlay":"over%2Flay.svg"}]}`,
 		},
 		{
 			"steps path with %20",
-			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"steps",steps:[{step:1,title:"S1",path:"s%20t.svg"}]}]}`,
+			`{"layers":[{"id":"a","title":"A","path":"ok.svg","type":"steps","steps":[{"step":1,"title":"S1","path":"s%20t.svg"}]}]}`,
 		},
 		{
 			"nested children path",
-			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"layer",children:[{id:"b",title:"B",path:"child%20x.svg",type:"layer"}]}]}`,
+			`{"layers":[{"id":"a","title":"A","path":"ok.svg","type":"layer","children":[{"id":"b","title":"B","path":"child%20x.svg","type":"layer"}]}]}`,
 		},
 	}
 
