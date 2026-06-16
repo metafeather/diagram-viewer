@@ -2,62 +2,51 @@
 
 ## Goal
 
-Bundle the diagram-viewer into a single ESM `dist/diagram-viewer.js` (no separate CSS file) using the exact pattern from sibling `story-mapper`: each component's shadow CSS lives in a `.css` file, imported as text via esbuild `--loader:.css=text`, wrapped once per component in a module-scoped lazy shared `CSSStyleSheet`, and adopted into each instance's shadow root via `adoptedStyleSheets`. Page-level styles (current `src/styles.css`) move out of the library and into the example pages where they belong. Consumers can then load the viewer with one `<script type="module" src="...jsdelivr/gh/...">` tag.
+Harden slide-path construction in `<diagram-viewer>` so paths are resolved through the browser's `URL` parser instead of string concatenation, eliminating double-encoding (`%2520`) when the component is served by static site generators (e.g. Hugo) that produce non-trivial `document.baseURI` values. Manifest paths remain raw (unencoded) by schema; resolved slide paths become fully qualified absolute URL strings.
 
 ## Tasks
 
-### 1. Externalise per-component shadow CSS
+### 1. Validate manifest paths are raw
 
-- [x] `src/diagram-canvas.js` — move the `const styles = \`...\``template literal into`src/diagram-canvas.css`and replace it with`import styles from "./diagram-canvas.css";`.
-- [x] `src/diagram-help-modal.js` — same treatment → `src/diagram-help-modal.css`.
-- [x] `src/diagram-loader.js` — same treatment → `src/diagram-loader.css`.
-- [x] `src/diagram-nav-tree.js` — same treatment → `src/diagram-nav-tree.css`.
-- [x] `src/diagram-viewer.js` — same treatment → `src/diagram-viewer.css` (this is the component's own shadow CSS, not the page-level `styles.css`).
+- [x] In `src/diagram-viewer.js` `loadData()` (around line 218–236), extend the per-layer validation loop to reject any `path` or `overlay` string containing a `%xx` percent-encoded sequence (regex `/%[0-9A-Fa-f]{2}/`). Throw with a message that names the offending field and item id, and states "manifest paths must be raw/unencoded — use a literal space, not %20".
+- [x] Apply the same check recursively to `item.children[*].path` and `item.steps[*].path` and `item.overlay` (mirroring the recursion in `#buildFlatSlideList`).
 
-### 2. Adopt story-mapper's lazy shared-sheet pattern
+### 2. Resolve slide paths via `URL` constructor
 
-- [x] In each component module, replace the per-instance `#sheet = new CSSStyleSheet()` field with a module-scoped `let _sharedSheet = null;` plus a `getSharedSheet()` helper that lazily constructs the sheet once and calls `replaceSync(styles)`. Mirror story-mapper/src/story-map.js (lines 14–21) verbatim in shape.
-- [x] In each component's `constructor` (after `attachShadow`), set `this.shadowRoot.adoptedStyleSheets = [getSharedSheet()];` — one shared sheet reference shared across all instances of that component.
-- [x] Apply to all five components: `diagram-canvas`, `diagram-help-modal`, `diagram-loader`, `diagram-nav-tree`, `diagram-viewer`. (`diagram-viewer` already uses a `static #styles` shared sheet — convert to the module-scoped lazy `getSharedSheet()` form for consistency with the others.)
-- [x] Confirm no component mutates its sheet at runtime; if any does, keep a per-instance sheet there and add a code comment explaining why.
+- [x] In `src/diagram-viewer.js` `#buildFlatSlideList()` (lines 769–803), replace every `` `${this.#basePath}/${item.path}` `` and `` `${this.#basePath}/${item.overlay}` `` and `` `${this.#basePath}/${step.path}` `` with a single helper `#resolveSlideUrl(relativePath)` that returns `new URL(relativePath, this.#resolvedBase()).href`.
+- [x] Implement `#resolvedBase()` returning a URL string with a guaranteed trailing slash, computed once per `loadData()` call: if `this.#basePath` is empty, use `document.baseURI`; otherwise use `new URL(this.#basePath.endsWith('/') ? this.#basePath : this.#basePath + '/', document.baseURI).href`.
+- [x] Cache the resolved base on the instance (e.g. `this.#resolvedBaseUrl`) and reset it whenever `loadData()` or `loadFromUrl()` runs or `base-path` changes.
 
-### 3. Remove page-level `src/styles.css` from the library
+### 3. Update canvas URL → slide matching
 
-- [x] Confirm `src/diagram-viewer.js` does not import `./styles.css` (it currently doesn't).
-- [x] Delete `src/styles.css`.
+- [x] In `src/diagram-canvas.js` `#resolveUrlToSlide()` (lines 158–170), replace the `decodeURIComponent(url.pathname)` + `indexOf(basePath)` substring logic with a direct comparison: each `slide.path` is now an absolute URL (from task 2), so resolve `href` via `new URL(href, baseUrl).href` and find the slide whose `path` equals that resolved URL. Drop `this.#basePath` from the matching code path entirely.
+- [x] Keep the `try/catch` wrapper and `return null` fallback for malformed URLs.
+- [x] Remove the now-unused `basePath` setter on `diagram-canvas` if no other code reads it; otherwise leave as a no-op with a comment.
 
-### 4. Update the build pipeline
+### 4. Audit other path concatenations
 
-- [x] Replace both `Taskfile.yaml` `build` commands with one: `go tool esbuild src/diagram-viewer.js --bundle --format=esm --target=es2022 --loader:.css=text --outfile=dist/diagram-viewer.js`.
-- [x] Replace both `dev` watch commands with the same single command plus `--watch`.
-- [x] Leave `task clean` unchanged (`rm -rf dist/`).
+- [x] Search `src/` for any remaining `` `${...}/${...}` `` patterns that build URLs (overlay handling in `diagram-canvas.js`, any nav-tree icon paths, etc.) and convert to `new URL()` resolution where the result is used as a network URL. Document any deliberate exceptions in a code comment.
+- [x] Confirm `diagram-loader.js` `loadFromUrl()` already uses `new URL(url, document.baseURI).href` (it does — keep as is).
 
-### 5. Move page-level styles into example pages
+### 5. Add Playwright test for spaces in paths
 
-- [x] In `index.html`, drop `<link rel="stylesheet" href="dist/diagram-viewer.css">` and add an inline `<style>` block with the rules from the deleted `src/styles.css` (`*, *::before, *::after { box-sizing: border-box }`, `html, body { height:100%; margin:0; padding:0 }`, `body { font-family: system-ui, ... }`, `diagram-viewer { display:block; height:100vh; width:100% }`).
-- [x] In `examples/multi.html`, drop `<link rel="stylesheet" href="../dist/diagram-viewer.css">` and add the equivalent inline `<style>` block (adjusted for any layout-specific overrides multi.html needs).
+- [x] Create `tests/fixtures/spaced/` with: a minimal `manifest.json` referencing a slide at `Control Plane/diagram.svg`, the directory `Control Plane/` containing a tiny valid `diagram.svg`, and a host `index.html` that mounts `<diagram-viewer manifest="manifest.json" sidebar bookmarkable>`.
+- [x] Add `tests/diagram_spaced_paths_test.go` that:
+  - serves the fixture via the existing test server harness (see `main_test.go` for pattern),
+  - loads the page in Playwright,
+  - clicks the sidebar entry for the spaced-path slide,
+  - captures the network request for the SVG via `page.WaitForRequest` (or equivalent in the project's Playwright Go binding),
+  - asserts the request URL contains exactly one occurrence of `%20` and zero occurrences of `%2520`.
+- [x] Add a second assertion: after navigation, `location.hash` matches the slide id (proves bookmarkable round-trip still works with the new absolute-URL `slide.path`).
+- [x] Run `task test` and confirm all existing tests still pass alongside the new one.
 
-### 6. Update tests
+### 6. Update documentation
 
-- [x] Inspect `tests/diagram_viewer_multi_test.go` (lines 500, 569 reference `dist/diagram-viewer.js`); confirm no `dist/diagram-viewer.css` references remain and remove any that do.
-- [x] Run `task test` — all Playwright tests must pass with the bundled module providing every shadow style and the example pages providing page-level layout.
-
-### 7. Verify end-to-end
-
-- [x] `task build` produces only `dist/diagram-viewer.js` (no `.css`).
-- [x] `task serve` and visual check: `index.html` and `examples/multi.html` render identically to before.
-- [x] Multi-instance check via `examples/multi.html`: both viewers render with full styling, hash sync still works, and a `document.querySelectorAll('diagram-canvas').length`-style spot check confirms each component's shadow root references the same `CSSStyleSheet` object (lazy shared-sheet pattern proven).
-
-### 8. Document CDN usage
-
-- [x] Add a "Use via CDN (jsdelivr)" section to `README.md` showing a one-liner: `<script type="module" src="https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@<tag>/dist/diagram-viewer.js"></script>` plus minimal `<diagram-viewer>` / `<diagram-loader>` markup.
-- [x] State that no CSS link is required — all component styles are bundled and adopted into shadow roots.
-- [x] Recommend pinning to a tag (e.g. `@v0.1.0`) over `@main` for production.
-- [x] Note that the consumer owns page-level layout (e.g. giving `<diagram-viewer>` a height); link to the inline `<style>` block in `index.html` as a copy-paste starter.
+- [x] In `README.md`, add a short "Manifest path rules" subsection stating: paths must be raw/unencoded relative paths (e.g. `"Control Plane/x.svg"`, never `"Control%20Plane/x.svg"`); the component resolves them against `base-path` (or the manifest URL's directory) using the browser's URL parser.
+- [x] Note the rationale: avoids double-encoding when served by static site generators that already percent-encode URLs in the surrounding HTML.
 
 ## Notes
 
-- **Pattern parity with story-mapper** — `--loader:.css=text`, `import styles from "./*.css"`, module-scoped lazy `getSharedSheet()`, and `adoptedStyleSheets = [sheet]` per shadow root. One sheet object per component class, shared across all instances of that component.
-- **`replaceSync` requires the import to be a string** — esbuild's `text` loader provides exactly that, identical to story-mapper.
-- **Library no longer ships page styles** — small breaking change for any downstream that relied on `dist/diagram-viewer.css`. Documented in README.
-- **No `package.json`** — per decision, jsdelivr GitHub URLs (`cdn.jsdelivr.net/gh/owner/repo@tag/...`) are sufficient.
+- **Why the bug surfaces with Hugo** — Hugo can emit a `<base>` tag or canonicalised URLs whose `document.baseURI` already contains `%20`. When `iframe.src = "Control Plane/..."` is set as a relative string, the browser resolves it against that base and in some configurations the `%` in the base survives while the new space is encoded, producing `%2520`. Routing through `new URL(path, base)` ourselves makes resolution deterministic regardless of host environment.
+- **Breaking change risk** — `slide.path` shape changes from relative to absolute URL string. Any external consumer of the `slide-change` event detail that parses `slide.path` as a relative path will need to update. Worth a one-line note in README's changelog section if one exists.
+- **Schema strictness over tolerance** — per decision, `%xx` in manifest paths is now an error, not silently normalised. This catches author mistakes early.

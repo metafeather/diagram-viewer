@@ -253,6 +253,38 @@ class DiagramViewer extends HTMLElement {
       }
     }
 
+    // ── Reject percent-encoded paths (R1 of s-5uyp) ────────────────────────
+    const pctRe = /%[0-9A-Fa-f]{2}/;
+    const validateNoPct = (items, breadcrumb) => {
+      for (let i = 0; i < items.length; i++) {
+        const item = items[i];
+        const label = `${breadcrumb}[${i}] (id="${item.id}")`;
+        if (pctRe.test(item.path)) {
+          throw new Error(
+            `loadData: ${label}.path contains percent-encoding — manifest paths must be raw/unencoded — use a literal space, not %20`,
+          );
+        }
+        if (item.overlay && pctRe.test(item.overlay)) {
+          throw new Error(
+            `loadData: ${label}.overlay contains percent-encoding — manifest paths must be raw/unencoded — use a literal space, not %20`,
+          );
+        }
+        if (item.steps) {
+          for (let s = 0; s < item.steps.length; s++) {
+            if (pctRe.test(item.steps[s].path)) {
+              throw new Error(
+                `loadData: ${label}.steps[${s}].path contains percent-encoding — manifest paths must be raw/unencoded — use a literal space, not %20`,
+              );
+            }
+          }
+        }
+        if (item.children) {
+          validateNoPct(item.children, `${label}.children`);
+        }
+      }
+    };
+    validateNoPct(data.layers, "layers");
+
     this.#sourceData = data;
     this.#basePath = this.getAttribute("base-path") || "";
 

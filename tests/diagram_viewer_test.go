@@ -368,3 +368,55 @@ func TestViewer_KeyboardWorksAfterSidebarClick(t *testing.T) {
 		t.Fatalf("ArrowDown after sidebar click did not advance slide: still %v", activeId)
 	}
 }
+
+func TestViewer_LoadDataRejectsPercentEncodedPaths(t *testing.T) {
+	page := newPage(t)
+	navigateToIndex(t, page)
+	clearLocalStorage(t, page)
+
+	cases := []struct {
+		name string
+		js   string
+	}{
+		{
+			"path with %20",
+			`{layers:[{id:"a",title:"A",path:"foo%20bar.svg",type:"layer"}]}`,
+		},
+		{
+			"overlay with %2F",
+			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"layer",overlay:"over%2Flay.svg"}]}`,
+		},
+		{
+			"steps path with %20",
+			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"steps",steps:[{step:1,title:"S1",path:"s%20t.svg"}]}]}`,
+		},
+		{
+			"nested children path",
+			`{layers:[{id:"a",title:"A",path:"ok.svg",type:"layer",children:[{id:"b",title:"B",path:"child%20x.svg",type:"layer"}]}]}`,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			result, err := page.Evaluate(`(manifest) => {
+				try {
+					document.querySelector('diagram-viewer').loadData(JSON.parse(manifest));
+					return {ok: true};
+				} catch(e) {
+					return {ok: false, error: e.message};
+				}
+			}`, tc.js)
+			if err != nil {
+				t.Fatalf("evaluate failed: %v", err)
+			}
+			m := result.(map[string]interface{})
+			if m["ok"] == true {
+				t.Fatalf("expected loadData to throw for %s", tc.name)
+			}
+			errMsg := m["error"].(string)
+			if !strings.Contains(errMsg, "manifest paths must be raw/unencoded") {
+				t.Fatalf("unexpected error message: %s", errMsg)
+			}
+		})
+	}
+}
