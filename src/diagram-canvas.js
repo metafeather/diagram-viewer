@@ -5,7 +5,6 @@
  * Properties (set by parent):
  *   - slide: { path, overlay } object
  *   - zoomLevel: number (default 1.5)
- *   - basePath: string
  *
  * Events emitted (all use `bubbles: true, composed: true` so they cross shadow
  * DOM boundaries and reach the parent <diagram-viewer> host):
@@ -48,7 +47,7 @@ class DiagramCanvas extends HTMLElement {
   #zoomLevel = 1.5;
   #zoomExplicitlySet = false;
   #initialLoadDone = false;
-  #basePath = '';
+
   #flatSlides = [];
   #currentSlide = null;
 
@@ -104,9 +103,9 @@ class DiagramCanvas extends HTMLElement {
     return this.#zoomLevel;
   }
 
-  set basePath(val) {
-    this.#basePath = val ?? '';
-  }
+  // No-op: basePath is retained for API compat with diagram-viewer but no
+  // longer used internally — slide.path is now an absolute URL.
+  set basePath(_val) {}
 
   set flatSlides(val) {
     this.#flatSlides = val ?? [];
@@ -157,12 +156,8 @@ class DiagramCanvas extends HTMLElement {
 
   #resolveUrlToSlide(href, baseUrl = globalThis.location.href) {
     try {
-      const url = new URL(href, baseUrl);
-      const path = decodeURIComponent(url.pathname);
-      const baseIndex = path.indexOf(`${this.#basePath}/`);
-      if (baseIndex === -1) return null;
-      const relativePath = path.substring(baseIndex);
-      const index = this.#flatSlides.findIndex((s) => s.path === relativePath);
+      const resolved = new URL(href, baseUrl).href;
+      const index = this.#flatSlides.findIndex((s) => s.path === resolved);
       return index !== -1 ? { slide: this.#flatSlides[index], index } : null;
     } catch {
       return null;
