@@ -61,6 +61,7 @@ class DiagramViewer extends HTMLElement {
   #instanceId = "";
   #manifest = null;
   #basePath = "";
+  #resolvedBaseUrl = null;
   #flatSlides = [];
   #currentIndex = 0;
   #zoomLevel = 1.5;
@@ -200,7 +201,10 @@ class DiagramViewer extends HTMLElement {
   attributeChangedCallback(name, oldValue, newValue) {
     if (oldValue === newValue) return;
 
-    if (name === "base-path") this.#basePath = newValue ?? "";
+    if (name === "base-path") {
+      this.#basePath = newValue ?? "";
+      this.#resolvedBaseUrl = null;
+    }
 
     if (name === "sidebar" && this.#container) {
       this.#container.classList.toggle(
@@ -287,6 +291,7 @@ class DiagramViewer extends HTMLElement {
 
     this.#sourceData = data;
     this.#basePath = this.getAttribute("base-path") || "";
+    this.#resolvedBaseUrl = null;
 
     // ── Preserve UI state from existing snapshot if present ───────────────
     let preservedUi = null;
@@ -373,6 +378,7 @@ class DiagramViewer extends HTMLElement {
     this.setAttribute("base-path", basePath);
     this.setAttribute("manifest", resolved);
     this.#basePath = basePath;
+    this.#resolvedBaseUrl = null;
 
     try {
       const response = await fetch(resolved);
@@ -454,6 +460,7 @@ class DiagramViewer extends HTMLElement {
       this.#sourceData = snapshot.manifest;
       this.#manifest = snapshot.manifest;
       this.#basePath = snapshot.basePath ?? "";
+      this.#resolvedBaseUrl = null;
 
       this.#navTree.title = this.#manifest.name ?? "Diagram";
       this.#buildFlatSlideList();
@@ -778,6 +785,7 @@ class DiagramViewer extends HTMLElement {
     this.#sourceData = snapshot.manifest;
     this.#manifest = snapshot.manifest;
     this.#basePath = snapshot.basePath ?? "";
+    this.#resolvedBaseUrl = null;
 
     this.#navTree.title = this.#manifest.name ?? "Diagram";
     this.#buildFlatSlideList();
@@ -867,6 +875,7 @@ class DiagramViewer extends HTMLElement {
   async #loadManifest() {
     const manifestPath = this.getAttribute("manifest");
     this.#basePath = this.getAttribute("base-path") ?? "";
+    this.#resolvedBaseUrl = null;
 
     if (!manifestPath) return; // loadData() will be called externally
 
@@ -914,6 +923,24 @@ class DiagramViewer extends HTMLElement {
     this.#container.appendChild(errorEl);
   }
 
+  #resolvedBase() {
+    if (!this.#resolvedBaseUrl) {
+      if (!this.#basePath) {
+        this.#resolvedBaseUrl = document.baseURI;
+      } else {
+        const base = this.#basePath.endsWith("/")
+          ? this.#basePath
+          : this.#basePath + "/";
+        this.#resolvedBaseUrl = new URL(base, document.baseURI).href;
+      }
+    }
+    return this.#resolvedBaseUrl;
+  }
+
+  #resolveSlideUrl(relativePath) {
+    return new URL(relativePath, this.#resolvedBase()).href;
+  }
+
   #buildFlatSlideList() {
     this.#flatSlides = [];
 
@@ -921,10 +948,10 @@ class DiagramViewer extends HTMLElement {
       this.#flatSlides.push({
         id: item.id,
         title: item.title,
-        path: `${this.#basePath}/${item.path}`,
+        path: this.#resolveSlideUrl(item.path),
         type: item.type,
         parentId,
-        overlay: item.overlay ? `${this.#basePath}/${item.overlay}` : null,
+        overlay: item.overlay ? this.#resolveSlideUrl(item.overlay) : null,
       });
 
       if (item.type === "steps" && item.steps) {
@@ -932,7 +959,7 @@ class DiagramViewer extends HTMLElement {
           this.#flatSlides.push({
             id: `${item.id}-step-${step.step}`,
             title: `${item.title} - ${step.title}`,
-            path: `${this.#basePath}/${step.path}`,
+            path: this.#resolveSlideUrl(step.path),
             type: "step",
             parentId: item.id,
           });
