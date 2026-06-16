@@ -97,21 +97,16 @@ func loadFixture(t *testing.T, page playwright.Page, path string) {
 	}
 }
 
-// hoverViewer moves the mouse over the viewer to enable keyboard handling.
+// hoverViewer moves the mouse over the viewer and focuses it for keyboard handling.
 func hoverViewer(t *testing.T, page playwright.Page) {
 	t.Helper()
-	box, err := page.Evaluate(`() => {
+	_, err := page.Evaluate(`() => {
 		const el = document.querySelector('diagram-viewer');
-		const r = el.getBoundingClientRect();
-		return {x: r.x + r.width/2, y: r.y + r.height/2};
+		el.focus();
 	}`)
 	if err != nil {
-		t.Fatalf("could not get viewer bounds: %v", err)
+		t.Fatalf("could not focus viewer: %v", err)
 	}
-	m := box.(map[string]interface{})
-	x := toFloat(m["x"])
-	y := toFloat(m["y"])
-	page.Mouse().Move(x, y)
 }
 
 func toFloat(v interface{}) float64 {
@@ -124,6 +119,22 @@ func toFloat(v interface{}) float64 {
 		return float64(n)
 	default:
 		return 0
+	}
+}
+
+// waitForSlideLoaded waits for the iframe inside diagram-canvas to have a non-empty src.
+func waitForSlideLoaded(t *testing.T, page playwright.Page) {
+	t.Helper()
+	_, err := page.WaitForFunction(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		if (!viewer || !viewer.shadowRoot) return false;
+		const canvas = viewer.shadowRoot.querySelector('diagram-canvas');
+		if (!canvas || !canvas.shadowRoot) return false;
+		const iframe = canvas.shadowRoot.querySelector('iframe');
+		return iframe && iframe.src && iframe.src !== 'about:blank';
+	}`, nil, playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(10000)})
+	if err != nil {
+		t.Fatalf("slide did not load in iframe: %v", err)
 	}
 }
 

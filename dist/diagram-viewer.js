@@ -1296,7 +1296,7 @@ var DiagramViewer = class extends HTMLElement {
       }
       this.#navigateToId(slideId, "replace");
     } else {
-      this.#loadFromHash();
+      this.#loadInitialSlide();
     }
     this.#persist();
   }
@@ -1836,6 +1836,18 @@ var DiagramViewer = class extends HTMLElement {
       this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
     const hash = location.hash.slice(1) || startAttr;
     this.#navigateToId(hash, "replace");
+  }
+  /**
+   * Navigate to the initial slide: from hash if bookmarkable, otherwise start-at or first slide.
+   */
+  #loadInitialSlide() {
+    if (this.#ownsHash() && location.hash.length > 1) {
+      this.#navigateToId(location.hash.slice(1), "replace");
+    } else {
+      const slideId =
+        this.getAttribute("start-at") || this.#flatSlides[0]?.id || "overview";
+      this.#navigateToId(slideId, "replace");
+    }
   }
   // ─── Navigation ─────────────────────────────────────────────────────────
   #goUp() {

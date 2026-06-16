@@ -9,6 +9,7 @@ func TestHelpModal_QuestionMarkOpens(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
+	waitForSlideLoaded(t, page)
 
 	// Enable keyboard
 	hoverViewer(t, page)
@@ -33,6 +34,7 @@ func TestHelpModal_EscapeCloses(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
+	waitForSlideLoaded(t, page)
 
 	// Open modal first
 	_, _ = page.Evaluate(`() => {

@@ -1,29 +1,54 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Diagram Viewer</title>
-  <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    html, body { height: 100%; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-    diagram-viewer { display: block; height: 100vh; width: 100%; }
-  </style>
-</head>
-<body>
-  <diagram-loader for="#viewer"></diagram-loader>
-  <diagram-viewer id="viewer" base-path="examples/kubernetes"></diagram-viewer>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Diagram Viewer</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+      }
+      diagram-viewer {
+        display: block;
+        height: 100vh;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <diagram-loader for="#viewer"></diagram-loader>
+    <diagram-viewer
+      id="viewer"
+      base-path="examples/kubernetes"
+      bookmarkable
+    ></diagram-viewer>
 
-  <footer style="margin-top:1rem;font-size:0.875rem">
-    <a href="examples/multi.html">See multi-instance demo</a>
-  </footer>
+    <footer style="margin-top: 1rem; font-size: 0.875rem">
+      <a href="examples/multi.html">See multi-instance demo</a>
+    </footer>
 
-  <script type="module" src="dist/diagram-viewer.js"></script>
-  <script type="module">
-    const resp = await fetch("examples/kubernetes/manifest.json");
-    const data = await resp.json();
-    document.getElementById("viewer").loadData(data);
-  </script>
-</body>
+    <script type="module" src="dist/diagram-viewer.js"></script>
+    <script type="module">
+      const resp = await fetch("examples/kubernetes/manifest.json");
+      const data = await resp.json();
+      document.getElementById("viewer").loadData(data);
+    </script>
+  </body>
 </html>

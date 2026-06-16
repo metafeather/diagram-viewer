@@ -9,6 +9,7 @@ func TestNavTree_ClickUpdatesIframeSrcAndHash(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
+	waitForSlideLoaded(t, page)
 
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
@@ -136,6 +137,7 @@ func TestNavTree_KeyboardNavigation(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
+	waitForSlideLoaded(t, page)
 
 	// Enable keyboard handling
 	hoverViewer(t, page)

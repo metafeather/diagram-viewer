@@ -9,6 +9,7 @@ func TestCanvas_ZoomKeysUpdateReadout(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
+	waitForSlideLoaded(t, page)
 
 	// Hover over the viewer to enable keyboard handling
 	hoverViewer(t, page)
@@ -97,9 +98,7 @@ func TestCanvas_IframeLoadsSVG(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "examples/kubernetes/manifest.json")
-
-	// Wait a moment for iframe to load
-	page.WaitForTimeout(1000)
+	waitForSlideLoaded(t, page)
 
 	result, err := page.Evaluate(`() => {
 		const viewer = document.querySelector('diagram-viewer');
