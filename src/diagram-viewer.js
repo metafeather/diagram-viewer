@@ -297,6 +297,8 @@ class DiagramViewer extends HTMLElement {
     this.#resolvedBaseUrl = null;
 
     // ── Preserve UI state from existing snapshot if present ───────────────
+    // Only UI state is merged from storage when a manifest is fetched;
+    // manifest and basePath are ignored to avoid stale state.
     let preservedUi = null;
     try {
       const raw = localStorage.getItem(this.#storageKey());
@@ -334,7 +336,8 @@ class DiagramViewer extends HTMLElement {
       ) {
         this.#container.style.gridTemplateColumns = `${preservedUi.sidebarWidthPx}px auto 1fr`;
       }
-      // Resolve slide — check if saved currentSlideId still exists
+      // Resolve slide — check if saved currentSlideId still exists;
+      // discard local currentSlideId on conflict.
       const hash = this.#ownsHash() ? location.hash.slice(1) : "";
       let slideId = hash || preservedUi.currentSlideId;
       const slideExists =
