@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manifest Refresh Test</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    html, body { height: 100%; margin: 0; padding: 0; }
+    diagram-viewer { display: block; height: 100vh; width: 100%; }
+  </style>
+</head>
+<body>
+  <diagram-viewer
+    id="viewer"
+    manifest="manifest.json"
+    sidebar
+    bookmarkable
+  ></diagram-viewer>
+
+  <script type="module" src="/dist/diagram-viewer.js"></script>
+</body>
+</html>

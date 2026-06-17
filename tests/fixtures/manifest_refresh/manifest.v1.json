@@ -1,0 +1,6 @@
+{
+  "name": "Manifest V1",
+  "layers": [
+    {"id": "a", "title": "Slide A", "path": "a.svg", "type": "layer"}
+  ]
+}
