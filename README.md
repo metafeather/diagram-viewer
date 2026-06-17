@@ -89,6 +89,10 @@ The `<diagram-loader>` custom element provides a file-loading toolbar that targe
 
 > **Breaking change:** The `slide.path` property in `slide-change` event details is now an absolute URL string (the resolved `URL.href`), not a relative path.
 
+### Persistence
+
+When the `manifest` attribute is set, `manifest.json` is fetched fresh on every page load — manifest content and the derived base-path are **never** restored from storage. Only UI state is persisted to `localStorage`: zoom level, sidebar open/closed, sidebar width, and current slide index. On restore, conflicting state is discarded (e.g. if the saved current-slide index exceeds the number of slides in the newly-fetched manifest, it resets to the first slide).
+
 ## Multi-instance
 
 See `examples/multi.html` for a side-by-side demo of two `<diagram-viewer>` elements sharing one manifest, with only the right instance owning the URL hash.
