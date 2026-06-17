@@ -121,8 +121,11 @@ class DiagramViewer extends HTMLElement {
     // Resolve URL hash ownership based on bookmarkable/primary attributes
     this.#resolveHashOwnership();
 
-    // Try restoring from localStorage first; fall back to manifest fetch
-    if (!this.#loadFromStorage()) {
+    // If manifest attribute is set, always fetch it directly.
+    // Otherwise, try restoring from localStorage first; fall back to manifest fetch.
+    if (this.hasAttribute('manifest')) {
+      this.#loadManifest();
+    } else if (!this.#loadFromStorage()) {
       this.#loadManifest();
     }
   }
