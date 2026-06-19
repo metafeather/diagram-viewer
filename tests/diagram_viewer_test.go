@@ -229,8 +229,8 @@ func TestViewer_ResetClearsZoomSidebarHashSlide(t *testing.T) {
 		t.Fatalf("evaluate failed: %v", err)
 	}
 	m := result.(map[string]interface{})
-	if m["zoomLevel"].(string) != "150%" {
-		t.Fatalf("expected zoom reset to 150%%, got %s", m["zoomLevel"])
+	if m["zoomLevel"].(string) != "100%" {
+		t.Fatalf("expected zoom reset to 100%%, got %s", m["zoomLevel"])
 	}
 	if m["hash"].(string) != "#overview" && m["hash"].(string) != "" {
 		t.Fatalf("expected hash to reset to overview, got %s", m["hash"])

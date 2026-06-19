@@ -4,7 +4,7 @@
  *
  * Properties (set by parent):
  *   - slide: { path, overlay } object
- *   - zoomLevel: number (default 1.5)
+ *   - zoomLevel: number (default 1.0)
  *
  * Events emitted (all use `bubbles: true, composed: true` so they cross shadow
  * DOM boundaries and reach the parent <diagram-viewer> host):
@@ -44,7 +44,7 @@ function getSharedSheet() {
 class DiagramCanvas extends HTMLElement {
   #iframe;
   #iframeContainer;
-  #zoomLevel = 1.5;
+#zoomLevel = 1.0;
   #zoomExplicitlySet = false;
   #initialLoadDone = false;
 
@@ -376,7 +376,7 @@ class DiagramCanvas extends HTMLElement {
 
     if (!this.#initialLoadDone) {
       if (!this.hasAttribute('zoom') && !this.#zoomExplicitlySet) {
-        this.#zoomLevel = 1.5;
+        this.#zoomLevel = 1.0;
       }
       this.#initialLoadDone = true;
     }
