@@ -1,0 +1,6 @@
+{
+  "layers": [
+    {"id": "viewbox-only", "title": "ViewBox Only", "path": "tests/fixtures/fit/viewbox_only.svg", "type": "svg"},
+    {"id": "percent-size", "title": "Percent Size", "path": "tests/fixtures/fit/percent_size.svg", "type": "svg"}
+  ]
+}
