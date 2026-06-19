@@ -363,7 +363,10 @@ class DiagramCanvas extends HTMLElement {
 
     const scaleX = (viewerW - padding) / width;
     const scaleY = (viewerH - padding) / height;
-    const fitScale = Math.min(scaleX, scaleY);
+    // Cover fit: scale so the shortest side of the content fully matches the
+    // corresponding viewport side. The longer side overflows and is reachable
+    // via the existing scroll container. Equivalent to CSS `object-fit: cover`.
+    const fitScale = Math.max(scaleX, scaleY);
 
     this.#iframe.style.width = `${width}px`;
     this.#iframe.style.height = `${height}px`;
