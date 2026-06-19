@@ -12,7 +12,7 @@ func TestCanvas_FitViewBoxOnly(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "tests/fixtures/fit/manifest.json")
-	waitForSlideLoaded(t, page)
+	waitForIframeSrc(t, page, "viewbox_only.svg")
 
 	// Expected viewBox dimensions
 	const expectedW = 1200.0
@@ -83,12 +83,12 @@ func TestCanvas_FitPercentSize(t *testing.T) {
 	navigateToIndex(t, page)
 	clearLocalStorage(t, page)
 	loadFixture(t, page, "tests/fixtures/fit/manifest.json")
-	waitForSlideLoaded(t, page)
+	waitForIframeSrc(t, page, "viewbox_only.svg")
 
 	// Navigate to the second slide (percent_size.svg) via keyboard
 	hoverViewer(t, page)
 	page.Keyboard().Press("ArrowDown")
-	waitForSlideLoaded(t, page)
+	waitForIframeSrc(t, page, "percent_size.svg")
 
 	// Expected viewBox dimensions
 	const expectedW = 600.0

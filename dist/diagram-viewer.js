@@ -316,9 +316,28 @@ var DiagramCanvas = class extends HTMLElement {
       styleEl.textContent = "html, body { margin: 0; padding: 0; } svg { display: block; }";
       iframeDoc.head.appendChild(styleEl);
     }
-    const width = svg.getAttribute("width") ?? svg.getBoundingClientRect().width;
-    const height = svg.getAttribute("height") ?? svg.getBoundingClientRect().height;
-    this.#setDimensionsAndScale(parseInt(width, 10) || 800, parseInt(height, 10) || 600);
+    const { width, height } = this.#measureSvg(svg);
+    this.#setDimensionsAndScale(width, height);
+  }
+  #measureSvg(svg) {
+    const wAttr = svg.getAttribute("width");
+    const hAttr = svg.getAttribute("height");
+    if (wAttr && hAttr && !wAttr.includes("%") && !hAttr.includes("%")) {
+      const w = parseFloat(wAttr);
+      const h = parseFloat(hAttr);
+      if (w > 0 && h > 0) return { width: w, height: h };
+    }
+    const vb = svg.viewBox?.baseVal;
+    if (vb && vb.width > 0 && vb.height > 0) {
+      return { width: vb.width, height: vb.height };
+    }
+    try {
+      const bb = svg.getBBox();
+      if (bb.width > 0 && bb.height > 0) return { width: bb.width, height: bb.height };
+    } catch { /* detached or unsupported */ }
+    const rect = svg.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return { width: rect.width, height: rect.height };
+    return { width: 800, height: 600 };
   }
   #handleImageInIframe(imageSrc) {
     const overlayPath = this.#currentSlide?.overlay;

@@ -78,7 +78,7 @@ func navigateToIndex(t *testing.T, page playwright.Page) {
 // clearLocalStorage removes all localStorage entries.
 func clearLocalStorage(t *testing.T, page playwright.Page) {
 	t.Helper()
-	_, err := page.Evaluate(`() => localStorage.clear()`)
+	_, err := page.Evaluate(`() => { localStorage.clear(); history.replaceState(null, '', location.pathname); }`)
 	if err != nil {
 		t.Fatalf("could not clear localStorage: %v", err)
 	}
@@ -88,9 +88,13 @@ func clearLocalStorage(t *testing.T, page playwright.Page) {
 func loadFixture(t *testing.T, page playwright.Page, path string) {
 	t.Helper()
 	_, err := page.Evaluate(`async (path) => {
+		const viewer = document.querySelector('diagram-viewer');
+		// Derive base-path from the manifest path's directory
+		const dir = path.substring(0, path.lastIndexOf('/'));
+		viewer.setAttribute('base-path', dir);
 		const resp = await fetch(path);
 		const data = await resp.json();
-		document.querySelector('diagram-viewer').loadData(data);
+		viewer.loadData(data);
 	}`, path)
 	if err != nil {
 		t.Fatalf("could not load fixture %s: %v", path, err)
@@ -135,6 +139,24 @@ func waitForSlideLoaded(t *testing.T, page playwright.Page) {
 	}`, nil, playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(10000)})
 	if err != nil {
 		t.Fatalf("slide did not load in iframe: %v", err)
+	}
+}
+
+// waitForIframeSrc waits for the iframe src to contain the given substring and
+// for dataset.baseWidth to be set (indicating the load handler has run).
+func waitForIframeSrc(t *testing.T, page playwright.Page, substr string) {
+	t.Helper()
+	_, err := page.WaitForFunction(`(substr) => {
+		const viewer = document.querySelector('diagram-viewer');
+		if (!viewer || !viewer.shadowRoot) return false;
+		const canvas = viewer.shadowRoot.querySelector('diagram-canvas');
+		if (!canvas || !canvas.shadowRoot) return false;
+		const iframe = canvas.shadowRoot.querySelector('iframe');
+		if (!iframe || !iframe.src || !iframe.src.includes(substr)) return false;
+		return !!iframe.dataset.baseWidth;
+	}`, substr, playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(10000)})
+	if err != nil {
+		t.Fatalf("iframe did not load %s: %v", substr, err)
 	}
 }
 

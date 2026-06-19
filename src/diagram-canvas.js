@@ -283,9 +283,34 @@ class DiagramCanvas extends HTMLElement {
       styleEl.textContent = 'html, body { margin: 0; padding: 0; } svg { display: block; }';
       iframeDoc.head.appendChild(styleEl);
     }
-    const width = svg.getAttribute('width') ?? svg.getBoundingClientRect().width;
-    const height = svg.getAttribute('height') ?? svg.getBoundingClientRect().height;
-    this.#setDimensionsAndScale(parseInt(width, 10) || 800, parseInt(height, 10) || 600);
+    const { width, height } = this.#measureSvg(svg);
+    this.#setDimensionsAndScale(width, height);
+  }
+
+  #measureSvg(svg) {
+    // 1. Explicit width/height attrs — only if both are concrete (no %)
+    const wAttr = svg.getAttribute("width");
+    const hAttr = svg.getAttribute("height");
+    if (wAttr && hAttr && !wAttr.includes("%") && !hAttr.includes("%")) {
+      const w = parseFloat(wAttr);
+      const h = parseFloat(hAttr);
+      if (w > 0 && h > 0) return { width: w, height: h };
+    }
+    // 2. viewBox baseVal
+    const vb = svg.viewBox?.baseVal;
+    if (vb && vb.width > 0 && vb.height > 0) {
+      return { width: vb.width, height: vb.height };
+    }
+    // 3. getBBox (rendered content bounds)
+    try {
+      const bb = svg.getBBox();
+      if (bb.width > 0 && bb.height > 0) return { width: bb.width, height: bb.height };
+    } catch { /* detached or unsupported */ }
+    // 4. getBoundingClientRect (last resort)
+    const rect = svg.getBoundingClientRect();
+    if (rect.width > 0 && rect.height > 0) return { width: rect.width, height: rect.height };
+    // 5. Hard fallback
+    return { width: 800, height: 600 };
   }
 
   #handleImageInIframe(imageSrc) {
