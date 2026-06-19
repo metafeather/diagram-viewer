@@ -270,7 +270,7 @@ func TestViewer_LocalStoragePersistenceAcrossReload(t *testing.T) {
 	}
 	beforeUI := before.(map[string]interface{})
 	beforeZoom := toFloat(beforeUI["zoomPercent"])
-	if beforeZoom == 150 {
+	if beforeZoom == 100 {
 		t.Fatal("zoom didn't actually change from default before reload")
 	}
 

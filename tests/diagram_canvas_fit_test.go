@@ -3,6 +3,8 @@ package tests
 import (
 	"math"
 	"testing"
+
+	"github.com/playwright-community/playwright-go"
 )
 
 // TestCanvas_FitViewBoxOnly verifies that an SVG with only a viewBox attribute
@@ -88,7 +90,20 @@ func TestCanvas_FitPercentSize(t *testing.T) {
 	// Navigate to the second slide (percent_size.svg) via keyboard
 	hoverViewer(t, page)
 	page.Keyboard().Press("ArrowDown")
-	waitForIframeSrc(t, page, "percent_size.svg")
+	// Wait for percent_size.svg to load AND its dimensions to be applied
+	_, err := page.WaitForFunction(`() => {
+		const viewer = document.querySelector('diagram-viewer');
+		if (!viewer || !viewer.shadowRoot) return false;
+		const canvas = viewer.shadowRoot.querySelector('diagram-canvas');
+		if (!canvas || !canvas.shadowRoot) return false;
+		const iframe = canvas.shadowRoot.querySelector('iframe');
+		if (!iframe || !iframe.src || !iframe.src.includes('percent_size.svg')) return false;
+		// Wait until baseWidth reflects the NEW svg (600x800), not the old one (1200x400)
+		return parseFloat(iframe.dataset.baseWidth) === 600;
+	}`, nil, playwright.PageWaitForFunctionOptions{Timeout: playwright.Float(10000)})
+	if err != nil {
+		t.Fatalf("percent_size.svg did not load with correct dimensions: %v", err)
+	}
 
 	// Expected viewBox dimensions
 	const expectedW = 600.0

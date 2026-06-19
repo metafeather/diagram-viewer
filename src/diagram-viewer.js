@@ -64,7 +64,7 @@ class DiagramViewer extends HTMLElement {
   #resolvedBaseUrl = null;
   #flatSlides = [];
   #currentIndex = 0;
-  #zoomLevel = 1.5;
+  #zoomLevel = 1.0;
   #navigationHistory = [];
   #forwardHistory = [];
   #abortController = null;
@@ -426,9 +426,9 @@ class DiagramViewer extends HTMLElement {
     this.#navigationHistory = [];
     this.#forwardHistory = [];
 
-    // Reset zoom to default (from attribute or 1.5)
+    // Reset zoom to default (from attribute or 1.0)
     const zoomAttr = parseInt(this.getAttribute("zoom"), 10);
-    this.#zoomLevel = zoomAttr > 0 && isFinite(zoomAttr) ? zoomAttr / 100 : 1.5;
+    this.#zoomLevel = zoomAttr > 0 && isFinite(zoomAttr) ? zoomAttr / 100 : 1.0;
     this.#canvas.zoomLevel = this.#zoomLevel;
     this.#navTree.zoomPercent = Math.round(this.#zoomLevel * 100);
 

@@ -1048,7 +1048,7 @@ var DiagramViewer = class extends HTMLElement {
   #resolvedBaseUrl = null;
   #flatSlides = [];
   #currentIndex = 0;
-  #zoomLevel = 1.5;
+  #zoomLevel = 1;
   #navigationHistory = [];
   #forwardHistory = [];
   #abortController = null;
@@ -1334,7 +1334,7 @@ var DiagramViewer = class extends HTMLElement {
     this.#navigationHistory = [];
     this.#forwardHistory = [];
     const zoomAttr = parseInt(this.getAttribute("zoom"), 10);
-    this.#zoomLevel = zoomAttr > 0 && isFinite(zoomAttr) ? zoomAttr / 100 : 1.5;
+    this.#zoomLevel = zoomAttr > 0 && isFinite(zoomAttr) ? zoomAttr / 100 : 1;
     this.#canvas.zoomLevel = this.#zoomLevel;
     this.#navTree.zoomPercent = Math.round(this.#zoomLevel * 100);
     this.#container.classList.remove("sidebar-collapsed");
