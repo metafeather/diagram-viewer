@@ -109,9 +109,13 @@ function getSharedSheet2() {
 var DiagramCanvas = class extends HTMLElement {
   #iframe;
   #iframeContainer;
-  #zoomLevel = 1.5;
+  #zoomLevel = 1;
   #zoomExplicitlySet = false;
   #initialLoadDone = false;
+  #contentWidth = 0;
+  #contentHeight = 0;
+  #resizeObserver = null;
+  #resizeRaf = 0;
   #flatSlides = [];
   #currentSlide = null;
   // Iframe event handlers
@@ -139,6 +143,20 @@ var DiagramCanvas = class extends HTMLElement {
       this.#handleIframeNavigation();
     });
     this.addEventListener("wheel", (e) => this.#handleWheelZoom(e), { passive: false });
+    this.#resizeObserver = new ResizeObserver(() => {
+      if (!this.#contentWidth || !this.#contentHeight) return;
+      if (this.#resizeRaf) cancelAnimationFrame(this.#resizeRaf);
+      this.#resizeRaf = requestAnimationFrame(() => {
+        this.#resizeRaf = 0;
+        this.#setDimensionsAndScale(this.#contentWidth, this.#contentHeight);
+      });
+    });
+    this.#resizeObserver.observe(this);
+  }
+  disconnectedCallback() {
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = null;
+    if (this.#resizeRaf) cancelAnimationFrame(this.#resizeRaf);
   }
   // ─── Public API ───────────────────────────────────────────────────────────
   get zoomPercent() {
@@ -334,7 +352,8 @@ var DiagramCanvas = class extends HTMLElement {
     try {
       const bb = svg.getBBox();
       if (bb.width > 0 && bb.height > 0) return { width: bb.width, height: bb.height };
-    } catch { /* detached or unsupported */ }
+    } catch {
+    }
     const rect = svg.getBoundingClientRect();
     if (rect.width > 0 && rect.height > 0) return { width: rect.width, height: rect.height };
     return { width: 800, height: 600 };
@@ -384,7 +403,7 @@ var DiagramCanvas = class extends HTMLElement {
     const padding = 2 * remToPx;
     const scaleX = (viewerW - padding) / width;
     const scaleY = (viewerH - padding) / height;
-    const fitScale = Math.min(scaleX, scaleY);
+    const fitScale = Math.max(scaleX, scaleY);
     this.#iframe.style.width = `${width}px`;
     this.#iframe.style.height = `${height}px`;
     this.#iframe.dataset.fitScale = fitScale;
@@ -392,11 +411,13 @@ var DiagramCanvas = class extends HTMLElement {
     this.#iframe.dataset.baseHeight = height;
     if (!this.#initialLoadDone) {
       if (!this.hasAttribute("zoom") && !this.#zoomExplicitlySet) {
-        this.#zoomLevel = 1.5;
+        this.#zoomLevel = 1;
       }
       this.#initialLoadDone = true;
     }
     this.#applyZoom();
+    this.#contentWidth = width;
+    this.#contentHeight = height;
   }
   #setDefaultDimensions() {
     this.#iframe.style.width = "100%";

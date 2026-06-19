@@ -44,9 +44,13 @@ function getSharedSheet() {
 class DiagramCanvas extends HTMLElement {
   #iframe;
   #iframeContainer;
-#zoomLevel = 1.0;
+  #zoomLevel = 1.0;
   #zoomExplicitlySet = false;
   #initialLoadDone = false;
+  #contentWidth = 0;
+  #contentHeight = 0;
+  #resizeObserver = null;
+  #resizeRaf = 0;
 
   #flatSlides = [];
   #currentSlide = null;
@@ -83,6 +87,23 @@ class DiagramCanvas extends HTMLElement {
 
     // Mouse wheel zoom
     this.addEventListener('wheel', (e) => this.#handleWheelZoom(e), { passive: false });
+
+    // Re-fit on viewer resize
+    this.#resizeObserver = new ResizeObserver(() => {
+      if (!this.#contentWidth || !this.#contentHeight) return;
+      if (this.#resizeRaf) cancelAnimationFrame(this.#resizeRaf);
+      this.#resizeRaf = requestAnimationFrame(() => {
+        this.#resizeRaf = 0;
+        this.#setDimensionsAndScale(this.#contentWidth, this.#contentHeight);
+      });
+    });
+    this.#resizeObserver.observe(this);
+  }
+
+  disconnectedCallback() {
+    this.#resizeObserver?.disconnect();
+    this.#resizeObserver = null;
+    if (this.#resizeRaf) cancelAnimationFrame(this.#resizeRaf);
   }
 
   // ─── Public API ───────────────────────────────────────────────────────────
@@ -381,6 +402,8 @@ class DiagramCanvas extends HTMLElement {
       this.#initialLoadDone = true;
     }
     this.#applyZoom();
+    this.#contentWidth = width;
+    this.#contentHeight = height;
   }
 
   #setDefaultDimensions() {
