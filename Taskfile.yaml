@@ -32,6 +32,11 @@ tasks:
     cmds:
       - go tool manifest --in examples/kubernetes.d2/ --format d2 -- --theme 200 --layout elk --sketch
 
+  manifest:regen-golden:
+    desc: Regenerate the golden file for the manifest integration test
+    cmds:
+      - go tool manifest --in examples/kubernetes.d2/ --format d2 -- --theme 200 --layout elk --sketch > cmd/manifest/testdata/kubernetes.golden.json
+
   clean:
     desc: Remove build artifacts
     cmds:

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -50,13 +51,47 @@ func TestManifestKubernetes_Golden(t *testing.T) {
 	out, err := cmd.Output() // stdout only; stderr warning is expected
 	_ = err
 
-	goldenPath := filepath.Join("testdata", "kubernetes.d2.golden")
+	goldenPath := filepath.Join("testdata", "kubernetes.golden.json")
 	golden, err := os.ReadFile(goldenPath)
 	if err != nil {
-		t.Fatalf("golden file not found at %s: create it once manifest is implemented", goldenPath)
+		t.Fatalf("golden file not found at %s: regenerate with `task manifest:regen-golden`", goldenPath)
 	}
 
-	if got := strings.TrimSpace(string(out)); got != strings.TrimSpace(string(golden)) {
-		t.Errorf("output does not match golden file.\n--- got ---\n%s\n--- want ---\n%s", got, string(golden))
+	got := strings.TrimSpace(string(out))
+	want := strings.TrimSpace(string(golden))
+	if got != want {
+		t.Errorf("output does not match golden file %s\n%s", goldenPath, unifiedDiff(want, got))
 	}
+}
+
+// unifiedDiff produces a simple unified-style diff between two strings.
+func unifiedDiff(want, got string) string {
+	wantLines := strings.Split(want, "\n")
+	gotLines := strings.Split(got, "\n")
+
+	var b strings.Builder
+	b.WriteString("--- want (golden)\n+++ got (actual)\n")
+
+	max := len(wantLines)
+	if len(gotLines) > max {
+		max = len(gotLines)
+	}
+	for i := 0; i < max; i++ {
+		var w, g string
+		if i < len(wantLines) {
+			w = wantLines[i]
+		}
+		if i < len(gotLines) {
+			g = gotLines[i]
+		}
+		if w != g {
+			if i < len(wantLines) {
+				fmt.Fprintf(&b, "-%s\n", w)
+			}
+			if i < len(gotLines) {
+				fmt.Fprintf(&b, "+%s\n", g)
+			}
+		}
+	}
+	return b.String()
 }
