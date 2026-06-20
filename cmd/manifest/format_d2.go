@@ -1,16 +1,165 @@
 package main
 
-// d2Format is the default Format implementation backed by the d2 tool.
-// Full implementation is in a subsequent issue.
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+	"regexp"
+	"strings"
+	"unicode"
+
+	"oss.terrastruct.com/d2/d2compiler"
+	"oss.terrastruct.com/d2/d2graph"
+)
+
+// d2Format is the Format implementation backed by the d2 compiler.
 type d2Format struct{}
 
 func (d2Format) Build(inPath string) (*Node, error) {
-	// TODO: implement in next issue (i-519l)
-	return nil, nil
+	entryFile := filepath.Join(inPath, "index.d2")
+	src, err := os.ReadFile(entryFile)
+	if err != nil {
+		return nil, fmt.Errorf("reading d2 entry file: %w", err)
+	}
+
+	absPath, err := filepath.Abs(inPath)
+	if err != nil {
+		return nil, fmt.Errorf("resolving path: %w", err)
+	}
+	g, _, err := d2compiler.Compile("index.d2", strings.NewReader(string(src)), &d2compiler.CompileOptions{
+		FS: os.DirFS(absPath),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("compiling d2: %w", err)
+	}
+
+	root := &Node{
+		ID:    "overview",
+		Title: "Overview",
+		Path:  "index.svg",
+		Type:  "layer",
+	}
+
+	root.Children = walkLayers(g.Layers, "")
+	// If root itself has scenarios (unlikely but handle)
+	if len(g.Scenarios) > 0 {
+		root.Type = "steps"
+		root.Steps = buildSteps(g.Scenarios, "")
+	}
+
+	// Determine root type based on children
+	if len(root.Children) > 0 {
+		root.Type = "layer"
+	}
+
+	return root, nil
+}
+
+// walkLayers recursively walks d2 graph layers and scenarios to produce Node children.
+func walkLayers(layers []*d2graph.Graph, parentPath string) []Node {
+	var nodes []Node
+	for _, layer := range layers {
+		node := buildNode(layer, parentPath)
+		nodes = append(nodes, node)
+	}
+	return nodes
+}
+
+// buildNode creates a Node from a d2 graph board.
+func buildNode(g *d2graph.Graph, parentPath string) Node {
+	name := g.Name
+	id := slugify(name)
+
+	hasLayers := len(g.Layers) > 0
+	hasScenarios := len(g.Scenarios) > 0
+	hasSteps := len(g.Steps) > 0
+
+	var node Node
+	node.ID = id
+	node.Title = name
+
+	switch {
+	case hasScenarios:
+		// Scenarios with numeric keys → "steps"
+		boardPath := joinPath(parentPath, name)
+		node.Path = boardPath + "/index.svg"
+		node.Type = "steps"
+		node.Steps = buildSteps(g.Scenarios, boardPath)
+
+	case hasSteps:
+		// Explicit d2 steps keyword
+		boardPath := joinPath(parentPath, name)
+		node.Path = boardPath + "/index.svg"
+		node.Type = "steps"
+		node.Steps = buildSteps(g.Steps, boardPath)
+
+	case hasLayers:
+		// Branch with sub-layers → "scenario"
+		boardPath := joinPath(parentPath, name)
+		node.Path = boardPath + "/index.svg"
+		node.Type = "scenario"
+		node.Children = walkLayers(g.Layers, boardPath)
+
+	default:
+		// Leaf layer
+		node.Path = joinPath(parentPath, name) + ".svg"
+		node.Type = "layer"
+	}
+
+	return node
+}
+
+// buildSteps creates Step entries from scenario/step sub-graphs.
+func buildSteps(boards []*d2graph.Graph, parentPath string) []Step {
+	steps := make([]Step, len(boards))
+	for i, b := range boards {
+		_ = b // We use index-based naming matching d2 CLI output
+		steps[i] = Step{
+			Step:  i + 1,
+			Path:  fmt.Sprintf("%s/%d.svg", parentPath, i+1),
+			Title: fmt.Sprintf("Step %d", i+1),
+		}
+	}
+	return steps
+}
+
+// joinPath joins path segments, handling empty parent.
+func joinPath(parent, name string) string {
+	if parent == "" {
+		return name
+	}
+	return parent + "/" + name
+}
+
+// slugify converts a board name to a kebab-case ID.
+// "Control Plane" → "control-plane", "ContainerLifeCycle" → "container-lifecycle"
+func slugify(s string) string {
+	// Insert hyphen at camelCase boundaries, treating consecutive uppercase as one word
+	// e.g. "ContainerLifeCycle" → "Container-Life-Cycle"
+	var buf strings.Builder
+	runes := []rune(s)
+	for i, r := range runes {
+		if unicode.IsUpper(r) && i > 0 {
+			prev := runes[i-1]
+			if unicode.IsLower(prev) || unicode.IsDigit(prev) {
+				buf.WriteRune('-')
+			}
+		}
+		buf.WriteRune(r)
+	}
+	result := buf.String()
+	result = strings.ToLower(result)
+	// Replace spaces and underscores with hyphens
+	result = regexp.MustCompile(`[\s_]+`).ReplaceAllString(result, "-")
+	// Remove non-alphanumeric except hyphens
+	result = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(result, "")
+	// Collapse multiple hyphens
+	result = regexp.MustCompile(`-+`).ReplaceAllString(result, "-")
+	return strings.Trim(result, "-")
 }
 
 func (d2Format) Render(inPath, outDir string, passthrough []string) error {
-	// TODO: implement in next issue (i-519l)
+	// TODO: implement in render issue
 	return nil
 }
 

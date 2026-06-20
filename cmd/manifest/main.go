@@ -3,6 +3,7 @@
 package main
 
 import (
+	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
@@ -47,12 +48,25 @@ func run(args []string) int {
 		return 2
 	}
 
-	// TODO: implement manifest generation using f
 	_ = outDir
 	_ = passthrough
-	_ = f
 
-	fmt.Fprintf(os.Stderr, "manifest: not implemented (in=%s out=%s format=%s passthrough=%v)\n",
-		*inPath, *outDir, *format, passthrough)
-	return 1
+	root, err := f.Build(*inPath)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 1
+	}
+
+	manifest := Manifest{
+		Layers: []Node{*root},
+	}
+
+	enc := json.NewEncoder(os.Stdout)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(manifest); err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 1
+	}
+
+	return 0
 }
