@@ -8,7 +8,10 @@ tool (
 	github.com/metafeather-org/diagram-viewer/cmd/manifest
 )
 
-require github.com/playwright-community/playwright-go v0.5700.1
+require (
+	github.com/google/go-cmp v0.7.0
+	github.com/playwright-community/playwright-go v0.5700.1
+)
 
 require (
 	cel.dev/expr v0.25.1 // indirect
