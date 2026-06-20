@@ -27,6 +27,11 @@ tasks:
     cmds:
       - go tool caddy run --config Caddyfile
 
+  manifest:example:
+    desc: Run manifest tool against examples/kubernetes.d2/
+    cmds:
+      - go tool manifest --in examples/kubernetes.d2/ --format d2 -- --theme 200 --layout elk --sketch
+
   clean:
     desc: Remove build artifacts
     cmds:

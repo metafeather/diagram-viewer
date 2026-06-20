@@ -5,6 +5,7 @@ go 1.26.4
 tool (
 	github.com/caddyserver/caddy/v2/cmd/caddy
 	github.com/evanw/esbuild/cmd/esbuild
+	github.com/metafeather-org/diagram-viewer/cmd/manifest
 )
 
 require github.com/playwright-community/playwright-go v0.5700.1
