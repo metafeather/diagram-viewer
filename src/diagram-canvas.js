@@ -54,6 +54,7 @@ class DiagramCanvas extends HTMLElement {
 
   #flatSlides = [];
   #currentSlide = null;
+  #anchorOnLoad = false;
 
   // Iframe event handlers
   #iframeKeyboardHandler = null;
@@ -136,6 +137,7 @@ class DiagramCanvas extends HTMLElement {
 
   loadSlide(slide) {
     this.#currentSlide = slide;
+    this.#anchorOnLoad = true;
     this.#iframe.style.backgroundImage = "";
     this.#iframe.src = slide.path;
   }
@@ -480,8 +482,13 @@ class DiagramCanvas extends HTMLElement {
     this.#iframeContainer.style.height = `${containerH}px`;
 
     requestAnimationFrame(() => {
-      this.scrollLeft = (this.scrollWidth - this.clientWidth) / 2;
-      this.scrollTop = (this.scrollHeight - this.clientHeight) / 2;
+      if (this.#anchorOnLoad) {
+        // Top-left anchor on initial slide load only; subsequent zoom
+        // and resize preserve the user's scroll position.
+        this.scrollLeft = 0;
+        this.scrollTop = 0;
+        this.#anchorOnLoad = false;
+      }
     });
 
     this.#dispatchZoomChange();

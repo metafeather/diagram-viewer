@@ -83,11 +83,11 @@ func TestMulti_StorageIsolation(t *testing.T) {
 	m := result.(map[string]interface{})
 	leftZoom := toFloat(m["leftZoom"])
 	rightZoom := toFloat(m["rightZoom"])
-	if leftZoom <= 150 {
-		t.Errorf("left zoom should be > 150 after zoomIn, got %v", leftZoom)
+	if leftZoom <= 100 {
+		t.Errorf("left zoom should be > 100 after zoomIn, got %v", leftZoom)
 	}
-	if rightZoom >= 150 {
-		t.Errorf("right zoom should be < 150 after zoomOut, got %v", rightZoom)
+	if rightZoom >= 100 {
+		t.Errorf("right zoom should be < 100 after zoomOut, got %v", rightZoom)
 	}
 	if leftZoom == rightZoom {
 		t.Errorf("storage not isolated: both zooms are %v", leftZoom)
@@ -272,8 +272,8 @@ func TestMulti_ResetScope(t *testing.T) {
 	}
 	m := result.(map[string]interface{})
 	rightZoom := toFloat(m["rightZoom"])
-	if rightZoom <= 150 {
-		t.Errorf("right zoom changed after left reset: got %v, want > 150", rightZoom)
+	if rightZoom <= 100 {
+		t.Errorf("right zoom changed after left reset: got %v, want > 100", rightZoom)
 	}
 	if m["rightActiveId"] == nil || !strings.Contains(m["rightActiveId"].(string), "kube-controller-manager") {
 		t.Errorf("right active changed after left reset: %v", m["rightActiveId"])

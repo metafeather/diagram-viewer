@@ -128,6 +128,7 @@ var DiagramCanvas = class extends HTMLElement {
   #resizeRaf = 0;
   #flatSlides = [];
   #currentSlide = null;
+  #anchorOnLoad = false;
   // Iframe event handlers
   #iframeKeyboardHandler = null;
   #iframeLinkClickHandler = null;
@@ -192,6 +193,7 @@ var DiagramCanvas = class extends HTMLElement {
   }
   loadSlide(slide) {
     this.#currentSlide = slide;
+    this.#anchorOnLoad = true;
     this.#iframe.style.backgroundImage = "";
     this.#iframe.src = slide.path;
   }
@@ -480,8 +482,11 @@ var DiagramCanvas = class extends HTMLElement {
     this.#iframeContainer.style.width = `${containerW}px`;
     this.#iframeContainer.style.height = `${containerH}px`;
     requestAnimationFrame(() => {
-      this.scrollLeft = (this.scrollWidth - this.clientWidth) / 2;
-      this.scrollTop = (this.scrollHeight - this.clientHeight) / 2;
+      if (this.#anchorOnLoad) {
+        this.scrollLeft = 0;
+        this.scrollTop = 0;
+        this.#anchorOnLoad = false;
+      }
     });
     this.#dispatchZoomChange();
   }
