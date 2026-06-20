@@ -39,6 +39,7 @@ func (d2Format) Build(inPath string) (*Node, error) {
 	}
 
 	root.Children = walkLayers(g.Layers, "")
+	attachOverlays(root, absPath)
 	// If root itself has scenarios (unlikely but handle)
 	if len(g.Scenarios) > 0 {
 		root.Type = "steps"
@@ -130,6 +131,30 @@ func joinPath(parent, name string) string {
 }
 
 
+
+// attachOverlays walks the node tree and sets Overlay for any node whose
+// source .d2 file has a sibling *.overlay.d2 file.
+func attachOverlays(node *Node, srcDir string) {
+	// Derive the source .d2 path from the node's output path.
+	// e.g. "Foo/bar.svg" → "Foo/bar.d2", "Foo/bar/index.svg" → "Foo/bar.d2"
+	if node.Path != "" {
+		var basePath string
+		if strings.HasSuffix(node.Path, "/index.svg") {
+			basePath = strings.TrimSuffix(node.Path, "/index.svg")
+		} else {
+			basePath = strings.TrimSuffix(node.Path, ".svg")
+		}
+
+		overlayD2 := filepath.Join(srcDir, basePath+".overlay.d2")
+		if _, err := os.Stat(overlayD2); err == nil {
+			node.Overlay = basePath + ".overlay.svg"
+		}
+	}
+
+	for i := range node.Children {
+		attachOverlays(&node.Children[i], srcDir)
+	}
+}
 
 func (d2Format) Render(inPath, outDir string, passthrough []string) error {
 	// TODO: implement in render issue
