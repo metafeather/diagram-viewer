@@ -4,9 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
-	"unicode"
 
 	"oss.terrastruct.com/d2/d2compiler"
 	"oss.terrastruct.com/d2/d2graph"
@@ -131,32 +129,7 @@ func joinPath(parent, name string) string {
 	return parent + "/" + name
 }
 
-// slugify converts a board name to a kebab-case ID.
-// "Control Plane" → "control-plane", "ContainerLifeCycle" → "container-lifecycle"
-func slugify(s string) string {
-	// Insert hyphen at camelCase boundaries, treating consecutive uppercase as one word
-	// e.g. "ContainerLifeCycle" → "Container-Life-Cycle"
-	var buf strings.Builder
-	runes := []rune(s)
-	for i, r := range runes {
-		if unicode.IsUpper(r) && i > 0 {
-			prev := runes[i-1]
-			if unicode.IsLower(prev) || unicode.IsDigit(prev) {
-				buf.WriteRune('-')
-			}
-		}
-		buf.WriteRune(r)
-	}
-	result := buf.String()
-	result = strings.ToLower(result)
-	// Replace spaces and underscores with hyphens
-	result = regexp.MustCompile(`[\s_]+`).ReplaceAllString(result, "-")
-	// Remove non-alphanumeric except hyphens
-	result = regexp.MustCompile(`[^a-z0-9-]`).ReplaceAllString(result, "")
-	// Collapse multiple hyphens
-	result = regexp.MustCompile(`-+`).ReplaceAllString(result, "-")
-	return strings.Trim(result, "-")
-}
+
 
 func (d2Format) Render(inPath, outDir string, passthrough []string) error {
 	// TODO: implement in render issue
