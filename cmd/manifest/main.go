@@ -48,8 +48,13 @@ func run(args []string) int {
 		return 2
 	}
 
-	_ = outDir
-	_ = passthrough
+	// Render if --out was specified
+	if *outDir != "" {
+		if err := f.Render(*inPath, *outDir, passthrough); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+	}
 
 	root, err := f.Build(*inPath)
 	if err != nil {

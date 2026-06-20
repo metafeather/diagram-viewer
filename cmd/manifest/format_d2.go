@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -157,8 +158,118 @@ func attachOverlays(node *Node, srcDir string) {
 }
 
 func (d2Format) Render(inPath, outDir string, passthrough []string) error {
-	// TODO: implement in render issue
+	d2Bin, err := exec.LookPath("d2")
+	if err != nil {
+		return fmt.Errorf("d2 binary not found on PATH: install from https://d2lang.com/tour/install")
+	}
+
+	absIn, err := filepath.Abs(inPath)
+	if err != nil {
+		return fmt.Errorf("resolving input path: %w", err)
+	}
+	absOut, err := filepath.Abs(outDir)
+	if err != nil {
+		return fmt.Errorf("resolving output path: %w", err)
+	}
+
+	entryFile := filepath.Join(absIn, "index.d2")
+
+	// d2 with multi-board input creates a directory named after the output stem.
+	// e.g. `d2 input.d2 /tmp/render.svg` → /tmp/render/{index.svg, layers...}
+	// We render to a temp location then move contents to outDir.
+	tmpOut, err := os.MkdirTemp("", "d2-render-*")
+	if err != nil {
+		return fmt.Errorf("creating temp dir: %w", err)
+	}
+	defer os.RemoveAll(tmpOut)
+
+	renderTarget := filepath.Join(tmpOut, "out.svg")
+
+	// d2 [passthrough...] <input> <output>
+	args := append([]string{}, passthrough...)
+	args = append(args, entryFile, renderTarget)
+
+	cmd := exec.Command(d2Bin, args...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return fmt.Errorf("d2 render failed: %w", err)
+	}
+
+	// d2 creates <tmpOut>/out/{index.svg, sub-boards...}
+	// Move contents to absOut.
+	renderDir := filepath.Join(tmpOut, "out")
+	if err := os.MkdirAll(absOut, 0o755); err != nil {
+		return fmt.Errorf("creating output dir: %w", err)
+	}
+	if err := copyDir(renderDir, absOut); err != nil {
+		return fmt.Errorf("copying render output: %w", err)
+	}
+
+	// Render overlays: find all .overlay.d2 files in the source directory
+	// and render each to the corresponding .overlay.svg path under outDir.
+	if err := renderOverlays(d2Bin, absIn, absOut, passthrough); err != nil {
+		return fmt.Errorf("rendering overlays: %w", err)
+	}
+
 	return nil
+}
+
+// copyDir recursively copies contents of src directory into dst.
+func copyDir(src, dst string) error {
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0o755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0o644)
+	})
+}
+
+// renderOverlays finds *.overlay.d2 files under srcDir and renders each to the
+// corresponding .overlay.svg path under outDir.
+func renderOverlays(d2Bin, srcDir, outDir string, passthrough []string) error {
+	return filepath.Walk(srcDir, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() || !strings.HasSuffix(path, ".overlay.d2") {
+			return nil
+		}
+
+		rel, err := filepath.Rel(srcDir, path)
+		if err != nil {
+			return err
+		}
+		// e.g. "Control Plane/cloud-controller-manager.overlay.d2" → "Control Plane/cloud-controller-manager.overlay.svg"
+		outPath := filepath.Join(outDir, strings.TrimSuffix(rel, ".d2")+".svg")
+
+		if err := os.MkdirAll(filepath.Dir(outPath), 0o755); err != nil {
+			return err
+		}
+
+		args := append([]string{}, passthrough...)
+		args = append(args, path, outPath)
+
+		cmd := exec.Command(d2Bin, args...)
+		cmd.Stdout = os.Stdout
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("d2 overlay render %s: %w", rel, err)
+		}
+		return nil
+	})
 }
 
 func init() {
