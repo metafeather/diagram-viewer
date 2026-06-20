@@ -47,9 +47,7 @@ func TestManifestKubernetes_Golden(t *testing.T) {
 	// Run against examples/kubernetes.d2/
 	examplesDir := filepath.Join("..", "..", "examples", "kubernetes.d2")
 	cmd := exec.Command(binPath, "--in", examplesDir, "--format", "d2", "--", "--theme", "200", "--layout", "elk", "--sketch")
-	out, err := cmd.CombinedOutput()
-	// We expect failure (exit 1) since it's not implemented yet,
-	// but once implemented we compare against the golden file.
+	out, err := cmd.Output() // stdout only; stderr warning is expected
 	_ = err
 
 	goldenPath := filepath.Join("testdata", "kubernetes.d2.golden")

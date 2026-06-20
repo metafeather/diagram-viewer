@@ -7,6 +7,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"path/filepath"
 )
 
 func main() {
@@ -48,14 +49,6 @@ func run(args []string) int {
 		return 2
 	}
 
-	// Render if --out was specified
-	if *outDir != "" {
-		if err := f.Render(*inPath, *outDir, passthrough); err != nil {
-			fmt.Fprintf(os.Stderr, "error: %v\n", err)
-			return 1
-		}
-	}
-
 	root, err := f.Build(*inPath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error: %v\n", err)
@@ -66,11 +59,37 @@ func run(args []string) int {
 		Layers: []Node{*root},
 	}
 
-	enc := json.NewEncoder(os.Stdout)
-	enc.SetIndent("", "  ")
-	if err := enc.Encode(manifest); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		return 1
+	if *outDir == "" {
+		// Stdout mode: emit JSON, warn if passthrough args are unused
+		if len(passthrough) > 0 {
+			fmt.Fprintf(os.Stderr, "warning: passthrough args %v ignored (no --out specified)\n", passthrough)
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(manifest); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+	} else {
+		// File mode: render and write manifest.json
+		if err := os.MkdirAll(*outDir, 0o755); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		if err := f.Render(*inPath, *outDir, passthrough); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		data, err := json.MarshalIndent(manifest, "", "  ")
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
+		manifestPath := filepath.Join(*outDir, "manifest.json")
+		if err := os.WriteFile(manifestPath, append(data, '\n'), 0o644); err != nil {
+			fmt.Fprintf(os.Stderr, "error: %v\n", err)
+			return 1
+		}
 	}
 
 	return 0
