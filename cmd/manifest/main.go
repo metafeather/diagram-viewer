@@ -41,10 +41,16 @@ func run(args []string) int {
 		return 2
 	}
 
-	// TODO: implement manifest generation
+	f, err := LookupFormat(*format)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "error: %v\n", err)
+		return 2
+	}
+
+	// TODO: implement manifest generation using f
 	_ = outDir
-	_ = format
 	_ = passthrough
+	_ = f
 
 	fmt.Fprintf(os.Stderr, "manifest: not implemented (in=%s out=%s format=%s passthrough=%v)\n",
 		*inPath, *outDir, *format, passthrough)

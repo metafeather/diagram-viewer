@@ -8,6 +8,33 @@ import (
 	"testing"
 )
 
+func TestUnsupportedFormat(t *testing.T) {
+	// Build the manifest tool
+	binPath := filepath.Join(t.TempDir(), "manifest")
+	build := exec.Command("go", "build", "-o", binPath, ".")
+	build.Dir = "."
+	if out, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("failed to build manifest: %v\n%s", err, out)
+	}
+
+	cmd := exec.Command(binPath, "--in", ".", "--format", "mermaid")
+	out, err := cmd.CombinedOutput()
+
+	// Expect exit code 2
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok {
+		t.Fatalf("expected ExitError, got %v", err)
+	}
+	if exitErr.ExitCode() != 2 {
+		t.Errorf("expected exit code 2, got %d", exitErr.ExitCode())
+	}
+
+	// Expect error message
+	if got := string(out); !strings.Contains(got, `unsupported format "mermaid"`) {
+		t.Errorf("expected unsupported format error, got: %s", got)
+	}
+}
+
 func TestManifestKubernetes_Golden(t *testing.T) {
 	// Build the manifest tool
 	binPath := filepath.Join(t.TempDir(), "manifest")
