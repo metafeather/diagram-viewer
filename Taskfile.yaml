@@ -37,6 +37,53 @@ tasks:
     cmds:
       - go tool manifest --in examples/kubernetes.d2/ --format d2 -- --theme 200 --layout elk --sketch > cmd/manifest/testdata/kubernetes.golden.json
 
+  release-hashes:
+    desc: Compute SRI hashes for dist/diagram-viewer.js and verify against jsDelivr CDN
+    deps: [build]
+    vars:
+      TAG: '{{.TAG | default ""}}'
+    cmds:
+      - |
+        set -euo pipefail
+        FILE="dist/diagram-viewer.js"
+        TAG="{{.TAG}}"
+        if [ -z "$TAG" ]; then
+          TAG="$(git describe --tags --abbrev=0 2>/dev/null || echo "")"
+        fi
+        if [ -z "$TAG" ]; then
+          echo "ERROR: No tag provided and none found via git describe." >&2
+          exit 1
+        fi
+
+        # Compute SRI digests
+        SHA384=$(openssl dgst -sha384 -binary "$FILE" | openssl base64 -A)
+        SHA256=$(openssl dgst -sha256 -binary "$FILE" | openssl base64 -A)
+        echo ""
+        echo "SRI hashes for $FILE (tag: $TAG):"
+        echo "  sha384-${SHA384}"
+        echo "  sha256-${SHA256}"
+        echo ""
+
+        # Verify against CDN
+        CDN_URL="https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@${TAG}/dist/diagram-viewer.js"
+        echo "Fetching $CDN_URL ..."
+        TMPFILE=$(mktemp)
+        trap 'rm -f "$TMPFILE"' EXIT
+        HTTP_CODE=$(curl -sS -o "$TMPFILE" -w "%{http_code}" "$CDN_URL")
+        if [ "$HTTP_CODE" != "200" ]; then
+          echo "ERROR: CDN returned HTTP $HTTP_CODE" >&2
+          exit 1
+        fi
+
+        CDN_SHA384=$(openssl dgst -sha384 -binary "$TMPFILE" | openssl base64 -A)
+        if [ "$CDN_SHA384" != "$SHA384" ]; then
+          echo "ERROR: CDN file does NOT match local build!" >&2
+          echo "  Local:  sha384-${SHA384}" >&2
+          echo "  CDN:    sha384-${CDN_SHA384}" >&2
+          exit 1
+        fi
+        echo "✓ CDN file matches local build (sha384 verified)."
+
   clean:
     desc: Remove build artifacts
     cmds:

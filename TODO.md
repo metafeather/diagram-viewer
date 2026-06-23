@@ -2,65 +2,94 @@
 
 ## Goal
 
-Fix `<diagram-canvas>` so that SVGs (especially viewBox-only ones produced by D2) are measured by their intrinsic content size and rendered at fit-along-shortest-side ("cover") on initial load, with zoom controls and viewer resizes honouring the corrected fit.
+Harden the diagram-viewer webcomponent and its bundled hosting so that, when embedded in any third-party HTML page, it cannot be coerced (by a malicious manifest URL, pasted JSON, or SVG file) into loading scripts, leaking the host origin, or violating the host's Content Security Policy — and consumers have clear, copy-paste guidance for serving the artifact safely.
 
 ## Tasks
 
-### 1. Capture current behaviour with a failing test
+### 1. Establish a failing security baseline ✅ recorded as i-6vrt
 
-- [x] Add a Playwright test fixture: a small SVG with **only `viewBox="0 0 1200 400"`** (no `width`/`height`), under `tests/fixtures/` and a matching minimal `manifest.json`.
-- [x] Add `tests/diagram_canvas_fit_test.go` that loads that fixture in `<diagram-viewer>`, then via `evaluate` reads the iframe's `dataset.baseWidth` / `dataset.baseHeight` and asserts they equal `1200` / `400` (the viewBox dims, not the iframe viewport size). This test must fail against `main`.
-- [x] In the same test, after load, assert the computed `transform: scale(...)` matches `Math.max((viewerW - 32) / 1200, (viewerH - 32) / 400)` (cover fit at zoomLevel 1.0). Must also fail against `main`.
+- [x] Add `tests/security_test.go` with Playwright cases that **must fail against `main`** for each issue we fix:
+  1. `loadFromUrl("https://evil.example/manifest.json")` — assert it is rejected before `fetch()` because it is not same-origin / same-base-path as the document.
+  2. Manifest with `path: "javascript:alert(1)"` — assert no navigation occurs and an error is surfaced.
+  3. Manifest with `path: "https://other.example/x.svg"` — assert it is rejected as cross-origin to the manifest base-path.
+  4. Manifest fetch where the response `Content-Type` is `text/html` — assert it is rejected.
+  5. Iframe element after slide load — assert it carries `sandbox="allow-same-origin"` (no `allow-scripts`) and `referrerpolicy="no-referrer"`.
+- [x] Record each test as red, then green after the corresponding task lands. Capture the run output in the PR description as the "failing → passing" evidence.
 
-### 2. Fix SVG dimension detection (spec-correct order)
+### 2. Validate manifest paths against the manifest base-path origin ✅ recorded as i-3qid
 
-- [x] In `src/diagram-canvas.js#handleSvgDimensions`, replace the `parseInt(getAttribute) ?? getBoundingClientRect()` logic with a helper `#measureSvg(svg)` that returns `{width, height}` using SVG2 / CSS intrinsic-sizing order:
-  1. `width`/`height` attributes — only if both parse as a positive number with no `%` unit (use `parseFloat` and reject values containing `%`).
-  2. `svg.viewBox.baseVal` (when `width > 0 && height > 0`).
-  3. `svg.getBBox()` (rendered content bounds; wrap in try/catch as it can throw on detached nodes).
-  4. `svg.getBoundingClientRect()` as last resort.
-  5. Hard fallback `800 × 600` only if all of the above yield 0 / NaN.
-- [x] Use `parseFloat` (not `parseInt`) and never silently coerce `"100%"` → `100`.
-- [x] Unit-style assertions: extend the test from task 1 with a second fixture having `width="100%" height="100%" viewBox="0 0 600 800"` to confirm percentage attrs are skipped in favour of viewBox.
+- [x] In `src/diagram-viewer.js#loadData`, extend the existing per-layer validation loop to also reject any `path` / `overlay` / `steps[].path` whose **resolved URL** has a different `origin + path-prefix` than the manifest's base-path. Use `new URL(path, base)` and compare `origin` plus `pathname.startsWith(basePathname)`.
+- [x] Reject paths whose **scheme is not `http:` or `https:`** after resolution (blocks `javascript:`, `data:`, `blob:`, `file:`, `vbscript:`).
+- [x] Throw a `TypeError` from `loadData` with a message identifying the offending field, matching the existing percent-encoding error style.
+- [x] Add the same checks to the JSON-paste dialog handler (`src/diagram-viewer.js` ~line 727) so pasted manifests run through the same gate.
+- [x] Document the rule in `README.md` under a new "Manifest portability & security" subsection: "manifest.json and all referenced SVGs must live under the same base-path; absolute URLs to other origins are rejected."
 
-### 3. Switch initial fit to "cover" along the shortest side
+### 3. Harden `loadFromUrl` against off-origin manifests ✅ recorded as i-3cw5
 
-- [x] In `#setDimensionsAndScale`, change `fitScale` from `Math.min(scaleX, scaleY)` to `Math.max(scaleX, scaleY)`. This makes the SVG fill the viewport along its shortest dimension; the longer dimension overflows and is reachable via the existing scroll container.
-- [x] Document the change in a comment block above the calculation, naming it explicitly as cover-fit.
+- [x] In `src/diagram-viewer.js#loadFromUrl`, after resolving the URL, reject if `resolved.origin !== document.location.origin`. Surface the error via `#showManifestError`.
+- [x] When fetching, set `fetch(resolved, { credentials: "same-origin", redirect: "error", headers: { Accept: "application/json" } })` so cross-origin redirects and credential leaks are impossible.
+- [x] After the fetch, validate `response.headers.get("content-type")` starts with `application/json` (strip parameters); reject otherwise with a clear error.
+- [x] Apply an `AbortController` with a 10-second timeout to prevent hangs.
+- [x] Apply the same `credentials`/`redirect`/`Accept`/timeout treatment to the `manifest=` attribute fetch path in `#loadManifest` (~line 889).
 
-### 4. Change default zoom level to 1.0
+### 4. Sandbox the iframe ✅ recorded as i-75le
 
-- [x] In `#setDimensionsAndScale`, change the default `this.#zoomLevel = 1.5` (line 351) to `1.0` so the diagram loads at exactly fit-scale.
-- [x] Update the existing `#zoomLevel = 1.5` initializer (class field, line 47) to `1.0` so the value is consistent before first load.
-- [x] Update `tests/diagram_viewer_test.go:232-233` which currently asserts the default zoom shows as `"150%"` — change the expectation to `"100%"`.
-- [x] Update `README.md` and any inline JSDoc that mentions the 1.5 default (search the repo for `1.5` / `150%`).
+- [x] In `src/diagram-canvas.js#connectedCallback`, set the iframe's attributes at creation:
+  - `sandbox="allow-same-origin"` — same origin so the existing `contentDocument` access for SVG measurement and link/keyboard interception keeps working, but **no `allow-scripts`**, blocking any `<script>` smuggled into a malicious SVG.
+  - `referrerpolicy="no-referrer"` — host page URL is not leaked when the iframe fetches the SVG.
+  - `loading="lazy"` — defensive, no security impact, but standard hygiene.
+- [x] Verify D2 sequence-step animations still work: each "step" is a separate SVG file, transitions happen via `iframe.src = step.path`, and the SVGs themselves rely only on inline `<style>` (confirmed in `examples/kubernetes/`). Add a comment in the code citing this assumption so future contributors don't add SMIL/JS-driven animations without revisiting sandbox flags.
+- [x] Add a Playwright test that injects a manifest pointing at a fixture SVG containing `<script>alert("pwn")</script>` and asserts the alert never fires (no `dialog` event).
 
-### 5. Recompute fit on viewer resize
+### 5. Stop reaching into iframe DOM with `innerHTML` for raster fallback ✅ recorded as i-5zyd
 
-- [x] Cache the last-known intrinsic SVG dimensions on the canvas instance (e.g. `#contentWidth` / `#contentHeight`) at the end of `#setDimensionsAndScale`.
-- [x] In `connectedCallback`, attach a `ResizeObserver` to `this` that, when fired, re-runs the fit-scale calculation against the cached intrinsic dimensions and calls `#applyZoom()`. Skip if no slide has been loaded yet.
-- [x] Disconnect the observer in `disconnectedCallback` to avoid leaks across multi-instance teardown.
-- [x] Guard against feedback loops: the observer must not fire from its own scroll-position adjustments inside `#applyZoom` (use a debounce via `requestAnimationFrame` and a `#resizing` flag).
-- [x] Add a Playwright test that resizes the page, then asserts the iframe's `transform: scale(...)` value has changed and still equals the cover-fit formula for the new viewport.
+- [x] In `src/diagram-canvas.js#renderImage` (~line 396), replace the `iframeDoc.body.innerHTML = ""` + `createElement("img")` flow with a fully programmatic build (no `innerHTML` write) so the function is robust under sandbox and against future CSP `unsafe-inline` removal in the host page. The current `createElement` part is fine; only the `innerHTML = ""` clear needs replacing with `replaceChildren()`.
+- [x] Audit the remaining `innerHTML` usages in `src/*.js` (loader, help-modal, nav-tree, viewer): keep them only where the right-hand side is a **static template literal with no interpolated user data**. Add a `// safe: static template` comment on each retained occurrence. Replace any interpolating one with `textContent` / DOM construction.
 
-### 6. Update the raster-image path to match
+### 6. Ship a hardened sample Caddyfile and document required headers ✅ recorded as i-98ix
 
-- [x] `#handleImageDimensions` already passes `naturalWidth`/`naturalHeight` to `#setDimensionsAndScale`, so the cover-fit and resize fixes will apply automatically. Verify with a manual smoke test against an `examples/.../*.png` slide. No code change expected; record the verification in the PR description.
+- [x] Replace the dev `Caddyfile` with a two-block config: a `dev` snippet (current behaviour) and a commented `# production` block that sets:
+  - `Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-src 'self'; connect-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'self'` — note: `'unsafe-inline'` for `style-src` is required because the component injects `<style>` into shadow roots and into the iframe's document; document this trade-off.
+  - `X-Content-Type-Options: nosniff`
+  - `Referrer-Policy: no-referrer`
+  - `Cross-Origin-Resource-Policy: same-origin`
+  - `Cross-Origin-Opener-Policy: same-origin`
+  - `Permissions-Policy: interest-cohort=(), browsing-topics=()`
+  - Drop the wildcard `Access-Control-Allow-Origin: *` — manifests and SVGs are designed to be served from the same origin as the host page (per the same-base-path rule from task 2), so CORS is not needed.
+- [x] Add a new `docs/HOSTING.md` (or a section in `README.md`) titled "Hosting requirements" that lists the headers above as a checklist, explains the rationale per header, and shows snippets for: Caddy, nginx, Apache, S3 + CloudFront response-headers policy, and GitHub Pages (note the limitation that GH Pages cannot set custom headers and recommend a CDN in front).
 
-### 7. Run the full test suite & smoke-test
+### 7. Document and provide SRI for the CDN script ✅ recorded as s-7yvv (sub-spec of s-8f0w)
 
-- [x] `task test` (or the project's test runner) must pass.
-- [x] Manual smoke test: load `examples/kubernetes/` in the dev server, confirm:
-  - On first load each diagram fills the viewport along its shortest side at 100% zoom.
-  - `+` / `-` / `0` keyboard controls, mouse-wheel zoom, and the sidebar zoom buttons all behave correctly relative to the new fit-scale.
-  - Resizing the browser window re-fits without requiring a slide reload.
-  - Tall diagrams (e.g. `Nodes/index.svg` with viewBox `0 0 1202 2468`) now render at correct content size, not letterboxed inside the iframe viewport.
+- [x] Update `README.md`'s "Use via CDN (jsdelivr)" section to show the `<script>` tag with `integrity="sha384-…"` and `crossorigin="anonymous"`, with a placeholder hash and instructions: "Replace with the hash printed by `task release-hashes` for the version you pinned."
+- [x] Add a `release-hashes` task to `Taskfile.yaml` that runs after the esbuild step and computes `sha384` and `sha256` SRI digests of `dist/diagram-viewer.js`, printing them in the form `sha384-<base64>` ready to paste.
+- [x] Update the GitHub release workflow (or document the manual release process if no workflow exists yet) so each release's notes include the SRI hash for that tagged build. If no release workflow exists, add a `RELEASE.md` describing the manual steps including the SRI publish step.
+- [x] Add a verification step to `release-hashes` that re-fetches `https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@<tag>/dist/diagram-viewer.js` and confirms the served file matches the local SRI before printing — fail loudly if not, since a mismatch means consumers using the documented hash would be blocked by the browser.
+
+### 8. Add a `<meta>` CSP to the bundled example pages ✅ recorded as i-5yw9
+
+- [x] Add a `<meta http-equiv="Content-Security-Policy" content="…">` tag to `index.html` and `examples/multi.html` mirroring the production Caddyfile policy from task 6 (minus the response-only directives that cannot be expressed in `<meta>`, e.g. `frame-ancestors`).
+- [x] Verify both example pages still load and function (manual smoke test plus the existing Playwright suite).
+- [x] Document in `README.md` that `<meta>` CSP is a **fallback** for static hosts that cannot set headers; real headers are strongly preferred.
+
+### 9. Add a security section to README ✅ recorded as i-2oe7
+
+- [x] Add a "Security" section to `README.md` that summarises the threat model (host page = trusted, end-user-pasted URL/JSON = untrusted, manifest+SVGs = single artifact under one base-path), the guarantees the component makes (sandboxed iframe, same-origin path enforcement, no script execution from SVG content, no credential leak across origins), and the host-page author's responsibilities (set the documented response headers, pin the CDN script with SRI, host manifests + SVGs together).
+
+### 10. Run the full test suite & smoke-test ✅ recorded as i-8y7w
+
+- [x] `task test` passes including the new security tests from tasks 1, 2, 3, 4.
+- [x] Manual smoke test on `index.html` and `examples/multi.html`: load, navigate, use loader, paste JSON, reset — all behave identically to before. Confirm no new console errors.
+- [x] Manual smoke test of the production Caddyfile: serve `index.html` with the production block enabled, open DevTools, verify zero CSP violation reports for normal usage.
 
 ## Notes
 
-- **Why cover, not contain.** User wants "fit along the shortest side" — the SVG's shortest dimension matches the viewport's corresponding side. The longer dimension overflows and is scrollable. This is the CSS `object-fit: cover` semantic, implemented as `Math.max(scaleX, scaleY)`.
-- **Why default zoom 1.0.** With the broken fit-scale, `1.5` compensated for letterboxing, so diagrams looked roughly "right". With accurate fit-scale, `1.0` *is* fit-to-viewport; `1.5` would now genuinely overflow on initial load, which the user does not want.
-- **Spec order for dimensions.** Per SVG 2 §8 / CSS intrinsic sizing: explicit `width`/`height` attrs win when both are concrete (non-percentage) lengths; otherwise the viewBox provides the intrinsic size and aspect ratio. Percentages on the root SVG resolve against the containing block (the iframe) and are therefore useless to us as content size signals.
-- **Why the current code under-measures.** D2 emits `viewBox`-only SVGs. `svg.getAttribute('width')` returns `null`, so the code falls through to `getBoundingClientRect()`, which returns the iframe's viewport (e.g. 1000×800). With `preserveAspectRatio="xMidYMid meet"`, the actual content is letterboxed inside that rect, so the *measured* size has nothing to do with the *content* size — and the eventual scaled iframe is mostly empty bands.
-- **Risk: existing persisted zoom.** `localStorage` retains user-set zoom levels. After this change, a stored `1.5` will mean genuine 150% overflow rather than the previous "looks fine" letterbox-compensation. Acceptable per scope; users can press `0` to reset.
-- **Out of scope.** Configurable contain/cover toggle attribute (separate future enhancement); fit recomputation on iframe content navigation other than load (already covered by the load handler).
+- **Why `sandbox="allow-same-origin"` (and not `sandbox=""`):** the canvas reads `iframe.contentDocument` to (a) measure the SVG's intrinsic size, (b) intercept link clicks for slide navigation, (c) intercept keyboard events. All three require same-origin DOM access. With same-origin only (no `allow-scripts`), inline `<script>` and event-handler attributes inside any SVG are inert.
+- **Why omit `allow-scripts`:** D2 SVG output uses only inline `<style>` and `<a>` links (verified in `examples/kubernetes/`). Sequence-step animations are achieved by navigating between separate SVG files, not via SMIL or JS. Future SVG sources that need scripts would have to opt back in explicitly.
+- **Why same-base-path enforcement:** per the user's portability requirement, a manifest plus its SVGs are a single artifact. Allowing manifest paths to escape the base-path enables off-origin exfiltration (e.g. `<img src>`-style trackers in SVGs) and breaks the portability invariant.
+- **Why drop wildcard CORS in production:** the same-base-path rule means every fetch the component makes is same-origin. Wildcard CORS only enables an attacker on a different origin to read the manifest/SVGs, which is unnecessary and weakens defence-in-depth.
+- **`style-src 'unsafe-inline'` trade-off:** the component injects `<style>` elements into shadow roots and into the iframe document for SVG/image normalisation. Eliminating `'unsafe-inline'` would require a CSP nonce wired through the component's host page integration — out of scope here. Documented as a known limitation.
+- **Out of scope:** Subresource Integrity for the manifest JSON / SVG files (no standard way to attach SRI to dynamic fetches in the browser); CSP nonces for injected styles; signing manifests; locking down the manifest schema with JSON Schema validation (separate enhancement).
+
+## Discovered Tasks
+
+(none yet)
