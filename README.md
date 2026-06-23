@@ -11,6 +11,8 @@ styles are bundled inside the JS and adopted into shadow roots automatically.
 <script
   type="module"
   src="https://cdn.jsdelivr.net/gh/metafeather/diagram-viewer@v0.1.0/dist/diagram-viewer.js"
+  integrity="sha384-PLACEHOLDER"
+  crossorigin="anonymous"
 ></script>
 
 <diagram-loader for="#viewer"></diagram-loader>
@@ -19,6 +21,11 @@ styles are bundled inside the JS and adopted into shadow roots automatically.
 
 **Pin to a tag** (e.g. `@v0.1.0`) for production use. Using `@main` will track
 the latest commit and may break without notice.
+
+**Subresource Integrity (SRI):** Replace `sha384-PLACEHOLDER` with the hash
+printed by `task release-hashes` for the version you pinned. This ensures the
+browser will reject the script if its contents don't match, protecting against
+CDN tampering. See [RELEASE.md](./RELEASE.md) for how hashes are generated.
 
 **Page layout is your responsibility.** The components have no opinion about
 page-level sizing. At minimum, give `<diagram-viewer>` a height:
